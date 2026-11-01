@@ -58,7 +58,17 @@ You can't ignore it, but you can turn it off for any single task. Those tasks st
 
 ## Install
 
-There's no prebuilt download yet, so you build it yourself. It takes about a minute.
+### Download (easiest)
+
+1. Grab **`tver-ka-<version>.zip`** from the [latest release](https://github.com/JBeanny/tver-ka-app/releases/latest). It's one universal build for Apple Silicon and Intel Macs, and needs macOS 14 Sonoma or later.
+2. Unzip it and drag **tver-ka.app** into **Applications**.
+3. Open it. The first time, macOS will say it can't verify the developer. That's expected: tver-ka is a free hobby project and isn't notarized with a paid Apple Developer account. To allow it once:
+   - open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway** next to tver-ka, **or**
+   - run `xattr -dr com.apple.quarantine /Applications/tver-ka.app` in Terminal.
+
+   After that it opens normally. If you'd rather not trust a prebuilt binary, build it yourself (below). It's the same code.
+
+### Build from source
 
 **Requirements:** macOS 14 Sonoma or later, plus Xcode 16 or later (or the matching Command Line Tools with Swift 6).
 
@@ -73,7 +83,7 @@ The app lives only in the menu bar (no Dock icon). Look for the pink blob in sun
 
 To start it automatically, open the popover and choose **`…` › Launch at login**.
 
-**Updating:** pull, then run the install again. Your to-dos are stored outside the app, so they carry over.
+**Updating:** download the newer release and replace the app, or, if you built from source, pull and run the install again. Your to-dos are stored outside the app, so they carry over.
 
 ```sh
 git pull && pkill -f TverKa; Scripts/bundle.sh --install && open /Applications/tver-ka.app
@@ -104,7 +114,10 @@ It's plain, readable JSON, so you can back it up, sync it however you like, or i
 swift build           # compile
 swift test            # run the core test suite
 Scripts/bundle.sh     # build build/tver-ka.app without installing
+Scripts/release.sh    # universal build + build/tver-ka-<VERSION>.zip for a GitHub release
 ```
+
+The version number lives in [`VERSION`](VERSION).
 
 Debug settings (set them as environment variables and run the binary directly):
 
@@ -138,7 +151,8 @@ Sources/
     Views/             #   Today, done pile, task options, projects, theme, icons
 Tests/TverKaCoreTests/ # Swift Testing suites
 Scripts/
-  bundle.sh            # build and wrap into a .app (with --install)
+  bundle.sh            # build and wrap into a .app (--install, --universal)
+  release.sh           # universal build, zipped for GitHub Releases
   make-icons.swift     # draws the app icon and writes AppIcon.icns
 Resources/AppIcon.icns
 ```

@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 # Builds tver-ka and wraps it into build/tver-ka.app (menu bar only, no Dock icon).
-# Usage: Scripts/bundle.sh [--install]   (--install copies it to /Applications)
+# Usage: Scripts/bundle.sh [--install] [--universal]
+#   --install    copy the app to /Applications
+#   --universal  build for Apple Silicon and Intel (used for releases)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-swift build -c release
-BIN="$(swift build -c release --show-bin-path)/TverKa"
+VERSION="$(tr -d '[:space:]' < VERSION)"
+ARCH_FLAGS=()
+[[ " $* " == *" --universal "* ]] && ARCH_FLAGS=(--arch arm64 --arch x86_64)
+
+swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
+BIN="$(swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)/TverKa"
 APP="build/tver-ka.app"
 
 rm -rf "$APP"
@@ -24,8 +30,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleDisplayName</key><string>tver-ka</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>CFBundleVersion</key><string>$VERSION</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
@@ -34,9 +40,9 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 PLIST
 
 codesign --force --sign - "$APP" >/dev/null
-echo "Built $APP"
+echo "Built $APP ($VERSION)"
 
-if [[ "${1:-}" == "--install" ]]; then
+if [[ " $* " == *" --install "* ]]; then
   rm -rf "/Applications/tver-ka.app"
   cp -R "$APP" /Applications/
   echo "Installed to /Applications/tver-ka.app"
