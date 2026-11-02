@@ -5,7 +5,7 @@ import TverKaCore
 /// Debug aid: `TVERKA_SNAPSHOT_DIR=/some/dir` renders each screen in light and dark to PNGs, then quits.
 @MainActor
 enum Snapshots {
-    static func render(store: TodoStore, to dir: URL) {
+    static func render(store: TodoStore, sync: SyncController, to dir: URL) {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let editing = store.priorityItems.first?.id ?? store.todayItems.first?.id
         let screens: [(String, AnyView)] = [
@@ -14,12 +14,13 @@ enum Snapshots {
             ("options", AnyView(RootView(editing: editing))),
             ("projects-dropdown", AnyView(RootView(projectsOpen: true))),
             ("projects-manage", AnyView(RootView(managingProjects: true))),
+            ("phone-setup", AnyView(RootView(settingUpPhone: true))),
         ]
         let wasShowingAll = store.showingAll
         for (name, view) in screens + [("today-all", AnyView(RootView())), ("done-all", AnyView(RootView(screen: .done)))] {
             if name.hasSuffix("-all") { store.showAll() }
             for scheme in [ColorScheme.light, .dark] {
-                let host = NSHostingView(rootView: view.environment(store).environment(\.colorScheme, scheme))
+                let host = NSHostingView(rootView: view.environment(store).environment(sync).environment(\.colorScheme, scheme))
                 host.frame = NSRect(x: 0, y: 0, width: 360, height: 640)
                 let window = NSWindow(
                     contentRect: NSRect(x: -10_000, y: -10_000, width: 360, height: 640),

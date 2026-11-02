@@ -39,8 +39,9 @@ You can't ignore it, but you can turn it off for any single task. Those tasks st
 - **The done pile.** Finished to-dos stay out of the way behind one small button, grouped by day, and each one can be undone.
 - **Streaks.** The streak counts the days in a row you've finished at least one to-do.
 - **Menu bar icon.** A full-color mascot that's easy to spot, with your open count. A yellow dot means priority to-dos are waiting.
+- **Add from your iPhone.** Turn on iCloud sync and use the included Shortcut: "Hey Siri, add to tver-ka", the Action button, or a home screen icon. To-dos land on your Mac within seconds.
 - **Light, dark, or match system.**
-- **Native and local.** SwiftUI, no account, no network. Your data is a single JSON file on your Mac.
+- **Native and private.** SwiftUI, no account, no server. Your data is a single JSON file, kept on your Mac or in your own iCloud Drive.
 
 <p align="center">
   <img src="docs/screenshots/today-all-light.png" width="240" alt="All projects view with project tags on each row">
@@ -89,6 +90,42 @@ To start it automatically, open the popover and choose **`…` › Launch at log
 git pull && pkill -f TverKa; Scripts/bundle.sh --install && open /Applications/tver-ka.app
 ```
 
+## iPhone & iCloud
+
+tver-ka syncs through **your own iCloud Drive**. There's no server and no extra account, and no iPhone app to install. Adding from the phone uses Apple's **Shortcuts** app.
+
+<p align="center"><img src="docs/screenshots/phone-setup-light.png" width="260" alt="Add from iPhone setup sheet"></p>
+
+**Set it up (once):**
+1. In the menu bar popover, open **`…` › Add from iPhone…**
+2. Turn on **sync with iCloud**. Your to-dos move to `iCloud Drive › tver-ka › todos.json`, and a backup of the local copy is kept.
+3. Click **add to Shortcuts**. The "Add to tver-ka" shortcut is added on your Mac and syncs to your iPhone through iCloud. (Optional: **+ list viewer** adds "My tver-ka to-dos", which shows today's list on the phone.)
+
+**Use it on iPhone:** run **Add to tver-ka** from Siri ("Hey Siri, add to tver-ka"), the Action button, a home screen icon, or the Shortcuts widget. Type or say the to-do and it appears on your Mac within about 5 seconds.
+
+| You type | Result |
+| --- | --- |
+| `buy oat milk` | to-do in the project you last used |
+| `#work send invoice` | goes into the **work** project (case-insensitive) |
+| `call landlord !` | marked **priority** |
+
+**How it works:** the shortcut saves each to-do as a tiny text file in `iCloud Drive › Shortcuts › tver-ka › inbox`. The Mac app checks that folder every few seconds, adds what it finds, and deletes the files. It also keeps `iCloud Drive › Shortcuts › tver-ka › Today.md` up to date, so you can read your list in the Files app or with the list-viewer shortcut.
+
+<details>
+<summary><b>Build the shortcut by hand instead</b> (if the import doesn't work)</summary>
+
+In the Shortcuts app on iPhone, tap **+** and add:
+
+1. **Ask for Input** → type *Text*, prompt `what's the move?`
+2. **Save File** → input *Provided Input*, turn **Ask Where to Save** off, and set the destination path to `tver-ka/inbox/` + the **Current Date** variable (custom format `yyyyMMdd-HHmmss-SSS`) + `.txt`
+
+Name it **Add to tver-ka**.
+</details>
+
+> **Good to know:** iCloud Drive sync is "last write wins". If two Macs edit at the exact same moment, one edit can be lost; iCloud keeps a conflict copy next to the file. For a single Mac plus an iPhone this doesn't come up.
+>
+> A full native iPhone app with live two-way sync (CloudKit) is possible later, but it needs a paid Apple Developer account.
+
 ## How rollover works
 
 | To-do state at midnight | Auto-roll **on** (default) | Auto-roll **off** |
@@ -106,7 +143,7 @@ Everything is stored in:
 ~/Library/Application Support/tver-ka/todos.json
 ```
 
-It's plain, readable JSON, so you can back it up, sync it however you like, or inspect it. Nothing leaves your Mac.
+It's plain, readable JSON, so you can back it up or inspect it. With iCloud sync on, it lives in `iCloud Drive/tver-ka/todos.json` instead. Nothing ever goes anywhere but your Mac and your own iCloud.
 
 ## Development
 
@@ -125,6 +162,7 @@ Debug settings (set them as environment variables and run the binary directly):
 | --- | --- |
 | `TVERKA_DAY_OFFSET=1` | Pretend it's tomorrow, to watch rollover happen |
 | `TVERKA_DATA_FILE=/tmp/test.json` | Use a scratch data file instead of your real one |
+| `TVERKA_ICLOUD_ROOT=/tmp/fake-icloud` | Use a fake `~/Library/Mobile Documents` (create `com~apple~CloudDocs` inside it) so sync testing never touches real iCloud. It also uses separate settings. |
 | `TVERKA_SNAPSHOT_DIR=/tmp/shots` | Render every screen (light and dark) plus the menu bar icon to PNGs, then quit |
 
 ```sh
@@ -137,6 +175,12 @@ The app icon is drawn in code. After changing it, regenerate `Resources/AppIcon.
 swift Scripts/make-icons.swift
 ```
 
+The iPhone Shortcuts are generated too, and signed with `shortcuts sign` (needs iCloud):
+
+```sh
+swift Scripts/make-shortcuts.swift   # → Shortcuts/*.shortcut
+```
+
 ### Project layout
 
 ```
@@ -145,15 +189,21 @@ Sources/
     Todo.swift         #   to-do model and status (today / priority / missed / done)
     Rollover.swift     #   the rollover rules, streak, and done-pile grouping
     Project.swift      #   projects and the on-disk file format
-    TodoStore.swift    #   observable store, project scoping, JSON persistence
+    TodoStore.swift    #   observable store, project scoping, JSON persistence, external-change reload
+    SyncLocation.swift #   iCloud Drive paths and moving data in and out of iCloud
+    InboxImporter.swift#   parses and imports to-dos dropped in by the iPhone Shortcut
+    TodayDigest.swift  #   the Today.md summary for the phone
   TverKa/              # the SwiftUI menu bar app
-    TverKaApp.swift    #   MenuBarExtra, day-change and wake watcher
+    TverKaApp.swift    #   MenuBarExtra, day-change / wake / sync watcher
+    SyncController.swift # the iCloud sync setting and inbox polling
     Views/             #   Today, done pile, task options, projects, theme, icons
 Tests/TverKaCoreTests/ # Swift Testing suites
 Scripts/
   bundle.sh            # build and wrap into a .app (--install, --universal)
   release.sh           # universal build, zipped for GitHub Releases
   make-icons.swift     # draws the app icon and writes AppIcon.icns
+  make-shortcuts.swift # generates and signs the iPhone Shortcuts
+Shortcuts/             # signed "Add to tver-ka" and "My tver-ka to-dos"
 Resources/AppIcon.icns
 ```
 

@@ -4,10 +4,12 @@ import TverKaCore
 
 struct TodayView: View {
     @Environment(TodoStore.self) private var store
+    @Environment(SyncController.self) private var sync
     var theme: Theme
     var showDone: () -> Void
     var edit: (Todo.ID) -> Void
     var manageProjects: () -> Void
+    var setUpPhone: () -> Void
 
     @State private var draft = ""
     @State var projectsOpen = false
@@ -55,6 +57,13 @@ struct TodayView: View {
             ProjectPill(theme: theme, isOpen: $projectsOpen)
                 .anchorPreference(key: PillAnchorKey.self, value: .bounds) { $0 }
             Spacer()
+            if sync.isEnabled {
+                Image(systemName: "checkmark.icloud")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(theme.sub)
+                    .help("Synced with iCloud Drive")
+                    .accessibilityLabel("Synced with iCloud")
+            }
             Text(store.currentDay.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()).uppercased())
                 .font(.rounded(12, .heavy))
                 .tracking(1.2)
@@ -91,6 +100,10 @@ struct TodayView: View {
                         NSLog("tver-ka: launch at login failed: \(error)")
                     }
                 }))
+            Toggle("Sync with iCloud", isOn: Binding(get: { sync.isEnabled }, set: { sync.setEnabled($0) }))
+                .disabled(!sync.isAvailable)
+            Button("Add from iPhone…", action: setUpPhone)
+            Divider()
             Picker("Appearance", selection: $appearance) {
                 ForEach(Appearance.allCases) { Text($0.title).tag($0) }
             }

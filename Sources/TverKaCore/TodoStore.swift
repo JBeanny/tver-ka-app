@@ -14,8 +14,14 @@ public final class TodoStore {
     public private(set) var currentDay: Date
 
     public let calendar: Calendar
-    private let fileURL: URL
+    public private(set) var fileURL: URL
+    /// When set, a Markdown digest of today is written here on every save (for the iPhone).
+    public var digestURL: URL? {
+        didSet { writeDigest() }
+    }
     private let clock: @Sendable () -> Date
+    /// Modification date of the data file as of our last read or write; anything newer came from elsewhere.
+    private var knownModificationDate: Date?
 
     public init(fileURL: URL, calendar: Calendar = .current, now: @escaping @Sendable () -> Date = { Date() }) {
         self.fileURL = fileURL
@@ -24,7 +30,31 @@ public final class TodoStore {
         self.currentDay = calendar.startOfDay(for: now())
         self.activeProjectID = UUID()
         load()
+        if knownModificationDate == nil { save() }
         rollOver()
+    }
+
+    /// Points the store at another data file (e.g. iCloud Drive) and loads it.
+    public func relocate(to url: URL) {
+        fileURL = url
+        knownModificationDate = nil
+        projects = []
+        todos = []
+        load()
+        if knownModificationDate == nil { save() }
+        rollOver()
+        writeDigest()
+    }
+
+    /// Reloads if the data file was changed by someone else (another Mac via iCloud).
+    @discardableResult
+    public func reloadIfChangedExternally() -> Bool {
+        guard let modified = CoordinatedFile.modificationDate(fileURL), modified != knownModificationDate else {
+            return false
+        }
+        load()
+        writeDigest()
+        return true
     }
 
     nonisolated public static var defaultFileURL: URL {
@@ -43,6 +73,7 @@ public final class TodoStore {
     }
 
     public func selectProject(_ id: Project.ID) {
+        reloadIfChangedExternally()
         guard projects.contains(where: { $0.id == id }) else { return }
         guard id != activeProjectID || showingAll else { return }
         activeProjectID = id
@@ -51,6 +82,7 @@ public final class TodoStore {
     }
 
     public func showAll() {
+        reloadIfChangedExternally()
         guard !showingAll else { return }
         showingAll = true
         save()
@@ -63,6 +95,7 @@ public final class TodoStore {
     /// Creates a project, selects it and returns it. Blank names are ignored (returns the active project).
     @discardableResult
     public func addProject(_ name: String) -> Project {
+        reloadIfChangedExternally()
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return activeProject }
         let used = Set(projects.map(\.color))
@@ -77,6 +110,7 @@ public final class TodoStore {
     }
 
     public func renameProject(_ id: Project.ID, _ name: String) {
+        reloadIfChangedExternally()
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let i = projects.firstIndex(where: { $0.id == id }) else { return }
         projects[i].name = trimmed
@@ -84,6 +118,7 @@ public final class TodoStore {
     }
 
     public func setColor(_ id: Project.ID, _ color: ProjectColor) {
+        reloadIfChangedExternally()
         guard let i = projects.firstIndex(where: { $0.id == id }) else { return }
         projects[i].color = color
         save()
@@ -91,6 +126,7 @@ public final class TodoStore {
 
     /// Deletes a project and all of its to-dos. The last project can't be deleted.
     public func deleteProject(_ id: Project.ID) {
+        reloadIfChangedExternally()
         guard projects.count > 1, projects.contains(where: { $0.id == id }) else { return }
         projects.removeAll { $0.id == id }
         todos.removeAll { $0.projectID == id }
@@ -152,9 +188,20 @@ public final class TodoStore {
     // MARK: - Mutations
 
     public func add(_ title: String) {
+        add(title, projectNamed: nil, priority: false)
+    }
+
+    /// Adds a to-do to the project with this name (case-insensitive), or the active project if none matches.
+    public func add(_ title: String, projectNamed name: String?, priority: Bool) {
+        reloadIfChangedExternally()
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        todos.append(Todo(title: trimmed, projectID: activeProjectID, createdAt: now, dueDate: today))
+        let project = name.flatMap { n in
+            projects.first { $0.name.compare(n, options: .caseInsensitive) == .orderedSame }
+        }
+        todos.append(Todo(
+            title: trimmed, projectID: project?.id ?? activeProjectID, createdAt: now, dueDate: today,
+            isPriority: priority))
         save()
     }
 
@@ -186,13 +233,17 @@ public final class TodoStore {
     }
 
     public func delete(_ id: Todo.ID) {
+        reloadIfChangedExternally()
         todos.removeAll { $0.id == id }
         save()
     }
 
     /// Call on launch, when the popover opens, on day change and on wake.
     public func rollOver() {
-        if currentDay != today { currentDay = today }
+        if currentDay != today {
+            currentDay = today
+            writeDigest()
+        }
         let rolled = Rollover.apply(to: todos, now: now, calendar: calendar)
         guard rolled != todos else { return }
         todos = rolled
@@ -200,6 +251,7 @@ public final class TodoStore {
     }
 
     private func mutate(_ id: Todo.ID, _ change: (inout Todo) -> Void) {
+        reloadIfChangedExternally()
         guard let i = todos.firstIndex(where: { $0.id == id }) else { return }
         change(&todos[i])
         save()
@@ -210,14 +262,17 @@ public final class TodoStore {
     private func load() {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        if let data = try? Data(contentsOf: fileURL) {
+        if let data = CoordinatedFile.read(fileURL) {
+            // Only replace state on a successful decode, so a half-synced file never wipes anything.
             if let file = try? decoder.decode(SaveFile.self, from: data) {
                 projects = file.projects
                 todos = file.todos
                 if let id = file.activeProjectID { activeProjectID = id }
                 showingAll = file.showingAll ?? false
+                knownModificationDate = CoordinatedFile.modificationDate(fileURL)
             } else if let legacy = try? decoder.decode([Todo].self, from: data) {
                 todos = legacy
+                knownModificationDate = CoordinatedFile.modificationDate(fileURL)
             }
         }
         if projects.isEmpty {
@@ -243,11 +298,17 @@ public final class TodoStore {
         let file = SaveFile(
             projects: projects, activeProjectID: activeProjectID, showingAll: showingAll, todos: todos)
         do {
-            try FileManager.default.createDirectory(
-                at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try encoder.encode(file).write(to: fileURL, options: .atomic)
+            try CoordinatedFile.write(try encoder.encode(file), to: fileURL)
+            knownModificationDate = CoordinatedFile.modificationDate(fileURL)
         } catch {
             NSLog("tver-ka: failed to save todos: \(error)")
         }
+        writeDigest()
+    }
+
+    private func writeDigest() {
+        guard let digestURL else { return }
+        let text = TodayDigest.render(todos: todos, projects: projects, now: now, calendar: calendar)
+        try? CoordinatedFile.write(Data(text.utf8), to: digestURL)
     }
 }

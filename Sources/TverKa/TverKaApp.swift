@@ -5,15 +5,22 @@ import TverKaCore
 @main
 struct TverKaApp: App {
     @State private var store: TodoStore
+    @State private var sync: SyncController
     @State private var watcher: DayWatcher
 
     init() {
-        let store = TodoStore(fileURL: AppEnvironment.dataFile, now: AppEnvironment.now)
+        let paths = SyncPaths(localData: AppEnvironment.dataFile, iCloudRoot: AppEnvironment.iCloudRoot)
+        let store = TodoStore(fileURL: SyncController.launchDataFile(paths), now: AppEnvironment.now)
+        let sync = SyncController(store: store, paths: paths)
         _store = State(initialValue: store)
-        _watcher = State(initialValue: DayWatcher(store: store))
+        _sync = State(initialValue: sync)
+        _watcher = State(initialValue: DayWatcher(store: store, sync: sync))
+        if AppEnvironment.snapshotDir == nil {
+            DispatchQueue.main.async { sync.tick() }
+        }
         DispatchQueue.main.async { Appearance.saved.apply() }
         if let dir = AppEnvironment.snapshotDir {
-            DispatchQueue.main.async { Snapshots.render(store: store, to: dir) }
+            DispatchQueue.main.async { Snapshots.render(store: store, sync: sync, to: dir) }
         }
     }
 
@@ -21,6 +28,7 @@ struct TverKaApp: App {
         MenuBarExtra {
             RootView()
                 .environment(store)
+                .environment(sync)
         } label: {
             HStack(spacing: 3) {
                 Image(nsImage: MenuBarIcon.image(hot: store.anyOpenPriority))
@@ -34,34 +42,44 @@ struct TverKaApp: App {
 }
 
 /// Runtime knobs, mostly for testing rollover by hand:
-/// `TVERKA_DAY_OFFSET=1` pretends it's tomorrow, `TVERKA_DATA_FILE` points at a scratch file.
+/// `TVERKA_DAY_OFFSET=1` pretends it's tomorrow, `TVERKA_DATA_FILE` points at a scratch file,
+/// `TVERKA_ICLOUD_ROOT` stands in for `~/Library/Mobile Documents` so testing never touches real iCloud.
 enum AppEnvironment {
     private static let env = ProcessInfo.processInfo.environment
     static let dayOffset = Double(env["TVERKA_DAY_OFFSET"] ?? "") ?? 0
     static let snapshotDir = env["TVERKA_SNAPSHOT_DIR"].map { URL(fileURLWithPath: $0) }
     static let dataFile = env["TVERKA_DATA_FILE"].map { URL(fileURLWithPath: $0) } ?? TodoStore.defaultFileURL
+    static let usesFakeICloud = env["TVERKA_ICLOUD_ROOT"] != nil
+    static let iCloudRoot = env["TVERKA_ICLOUD_ROOT"].map { URL(fileURLWithPath: $0) } ?? SyncPaths.defaultICloudRoot
 
     @Sendable static func now() -> Date {
         Date().addingTimeInterval(dayOffset * 86_400)
     }
 }
 
-/// Re-runs rollover when the calendar day changes, after wake, and once a minute as a backstop.
+/// Re-runs rollover when the calendar day changes and after wake, and every few seconds
+/// checks iCloud for changes and iPhone inbox items (which also backstops rollover).
 @MainActor
 final class DayWatcher {
     private var tokens: [NSObjectProtocol] = []
     private var timer: Timer?
 
-    init(store: TodoStore) {
+    init(store: TodoStore, sync: SyncController) {
         let roll: @Sendable (Notification) -> Void = { _ in
-            Task { @MainActor in store.rollOver() }
+            Task { @MainActor in
+                sync.tick()
+                store.rollOver()
+            }
         }
         tokens.append(NotificationCenter.default.addObserver(
             forName: .NSCalendarDayChanged, object: nil, queue: .main, using: roll))
         tokens.append(NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main, using: roll))
-        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
-            Task { @MainActor in store.rollOver() }
+        timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
+            Task { @MainActor in
+                sync.tick()
+                store.rollOver()
+            }
         }
     }
 }

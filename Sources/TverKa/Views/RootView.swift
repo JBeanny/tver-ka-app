@@ -12,12 +12,17 @@ struct RootView: View {
     @State private var screen: Screen
     @State private var editing: Todo.ID?
     @State private var managingProjects: Bool
+    @State private var settingUpPhone: Bool
     private let projectsOpen: Bool
 
-    init(screen: Screen = .today, editing: Todo.ID? = nil, managingProjects: Bool = false, projectsOpen: Bool = false) {
+    init(
+        screen: Screen = .today, editing: Todo.ID? = nil, managingProjects: Bool = false,
+        projectsOpen: Bool = false, settingUpPhone: Bool = false
+    ) {
         _screen = State(initialValue: screen)
         _editing = State(initialValue: editing)
         _managingProjects = State(initialValue: managingProjects)
+        _settingUpPhone = State(initialValue: settingUpPhone)
         self.projectsOpen = projectsOpen
     }
 
@@ -31,6 +36,7 @@ struct RootView: View {
                     theme: theme, showDone: { go(.done) },
                     edit: { id in withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { editing = id } },
                     manageProjects: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { managingProjects = true } },
+                    setUpPhone: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { settingUpPhone = true } },
                     projectsOpen: projectsOpen)
                 .transition(.move(edge: .leading).combined(with: .opacity))
             case .done:
@@ -59,6 +65,17 @@ struct RootView: View {
                     .frame(maxHeight: .infinity, alignment: .bottom)
                     .transition(.move(edge: .bottom))
             }
+
+            if settingUpPhone {
+                Color.black.opacity(0.35)
+                    .ignoresSafeArea()
+                    .onTapGesture { close() }
+                    .transition(.opacity)
+                PhoneSetupView(theme: theme, close: close)
+                    .padding(10)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                    .transition(.move(edge: .bottom))
+            }
         }
         .frame(width: 360, height: 640)
         .onAppear { store.rollOver() }
@@ -72,6 +89,7 @@ struct RootView: View {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
             editing = nil
             managingProjects = false
+            settingUpPhone = false
         }
     }
 }
