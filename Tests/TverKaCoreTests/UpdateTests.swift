@@ -1,6 +1,12 @@
+import CryptoKit
 import Foundation
 import Testing
 @testable import TverKaCore
+
+let testKey = Curve25519.Signing.PrivateKey()
+func sign(_ zip: URL, with key: Curve25519.Signing.PrivateKey = testKey) throws -> Data {
+    try key.signature(for: Data(contentsOf: zip))
+}
 
 @Suite struct SemanticVersionTests {
     @Test func parsesTagsAndComparesNumerically() {
@@ -20,8 +26,8 @@ let sampleRelease = """
   "draft": false,
   "prerelease": false,
   "assets": [
-    {"name": "Tver-Ka-1.3.0.zip.sha256", "browser_download_url": "https://example.com/a.sha256", "size": 90},
-    {"name": "Tver-Ka-1.3.0.zip", "browser_download_url": "https://example.com/a.zip", "size": 1300000}
+    {"name": "Tver-Ka-1.3.0.zip.sig", "browser_download_url": "https://github.com/JBeanny/tver-ka-app/releases/download/v1.3.0/Tver-Ka-1.3.0.zip.sig", "size": 90},
+    {"name": "Tver-Ka-1.3.0.zip", "browser_download_url": "https://github.com/JBeanny/tver-ka-app/releases/download/v1.3.0/Tver-Ka-1.3.0.zip", "size": 1300000}
   ]
 }
 """
@@ -31,7 +37,7 @@ let sampleRelease = """
         let r = try JSONDecoder().decode(Release.self, from: Data(sampleRelease.utf8))
         #expect(r.version == SemanticVersion("1.3.0"))
         #expect(r.zipAsset?.name == "Tver-Ka-1.3.0.zip")
-        #expect(r.checksumAsset?.name == "Tver-Ka-1.3.0.zip.sha256")
+        #expect(r.signatureAsset?.name == "Tver-Ka-1.3.0.zip.sig")
         #expect(r.notes.contains("things"))
     }
 
@@ -56,10 +62,21 @@ let sampleRelease = """
         #expect(r.tagName == "v1.3.0")
     }
 
-    @Test func checksumFileParsing() {
-        #expect(UpdatePackage.parseChecksum("ABCDEF0123456789abcdef0123456789abcdef0123456789abcdef0123456789  build/x.zip\n")
-            == "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
-        #expect(UpdatePackage.parseChecksum("garbage") == nil)
+    @Test func onlyGitHubHTTPSDownloadsAreTrusted() {
+        #expect(Release.isTrustedDownload(URL(string: "https://github.com/JBeanny/tver-ka-app/releases/download/v1/x.zip")!, allowLocal: false))
+        #expect(Release.isTrustedDownload(URL(string: "https://objects.githubusercontent.com/x")!, allowLocal: false))
+        #expect(!Release.isTrustedDownload(URL(string: "http://github.com/x.zip")!, allowLocal: false))
+        #expect(!Release.isTrustedDownload(URL(string: "https://evil.example/x.zip")!, allowLocal: false))
+        #expect(!Release.isTrustedDownload(URL(string: "https://github.com.evil.example/x.zip")!, allowLocal: false))
+        #expect(!Release.isTrustedDownload(URL(fileURLWithPath: "/tmp/x.zip"), allowLocal: false))
+        #expect(Release.isTrustedDownload(URL(fileURLWithPath: "/tmp/x.zip"), allowLocal: true))
+    }
+
+    @Test func signatureFileParsing() {
+        let sig = Data(repeating: 7, count: 64)
+        #expect(UpdatePackage.parseSignature(sig.base64EncodedString() + "\n") == sig)
+        #expect(UpdatePackage.parseSignature("not base64!") == nil)
+        #expect(UpdatePackage.parseSignature(Data(count: 10).base64EncodedString()) == nil)
     }
 }
 
@@ -84,18 +101,41 @@ let sampleRelease = """
 
     @Test func preparesAValidNewerApp() throws {
         let zip = try makeZip()
-        let sum = try UpdatePackage.sha256(of: zip)
         let ready = try UpdatePackage.prepare(
-            zip: zip, expectedSHA256: sum, bundleID: "dev.tverka.app", currentVersion: "1.2.0", workDir: tempDir())
+            zip: zip, signature: try sign(zip), publicKey: testKey.publicKey.rawRepresentation,
+            bundleID: "dev.tverka.app", currentVersion: "1.2.0", workDir: tempDir())
         #expect(ready.appURL.lastPathComponent == "Tver Ka.app")
         #expect(ready.version == SemanticVersion("1.3.0"))
         #expect(FileManager.default.fileExists(atPath: ready.appURL.appendingPathComponent("Contents/Info.plist").path))
     }
 
-    @Test func rejectsChecksumMismatch() throws {
+    @Test func rejectsAMissingSignature() throws {
         let zip = try makeZip()
-        #expect(throws: UpdateError.checksumMismatch) {
-            try UpdatePackage.prepare(zip: zip, expectedSHA256: String(repeating: "0", count: 64),
+        #expect(throws: UpdateError.badSignature) {
+            try UpdatePackage.prepare(zip: zip, signature: nil, publicKey: testKey.publicKey.rawRepresentation,
+                                      bundleID: "dev.tverka.app", currentVersion: "1.2.0", workDir: tempDir())
+        }
+    }
+
+    @Test func rejectsASignatureFromAnotherKey() throws {
+        let zip = try makeZip()
+        let impostor = Curve25519.Signing.PrivateKey()
+        #expect(throws: UpdateError.badSignature) {
+            try UpdatePackage.prepare(zip: zip, signature: try sign(zip, with: impostor),
+                                      publicKey: testKey.publicKey.rawRepresentation,
+                                      bundleID: "dev.tverka.app", currentVersion: "1.2.0", workDir: tempDir())
+        }
+    }
+
+    @Test func rejectsATamperedZip() throws {
+        let zip = try makeZip()
+        let signature = try sign(zip)
+        let handle = try FileHandle(forWritingTo: zip)
+        try handle.seekToEnd()
+        try handle.write(contentsOf: Data([0x42]))
+        try handle.close()
+        #expect(throws: UpdateError.badSignature) {
+            try UpdatePackage.prepare(zip: zip, signature: signature, publicKey: testKey.publicKey.rawRepresentation,
                                       bundleID: "dev.tverka.app", currentVersion: "1.2.0", workDir: tempDir())
         }
     }
@@ -103,23 +143,24 @@ let sampleRelease = """
     @Test func rejectsADifferentApp() throws {
         let zip = try makeZip(bundleID: "com.someone.else")
         #expect(throws: UpdateError.wrongApp) {
-            try UpdatePackage.prepare(zip: zip, expectedSHA256: nil, bundleID: "dev.tverka.app",
-                                      currentVersion: "1.2.0", workDir: tempDir())
+            try UpdatePackage.prepare(zip: zip, signature: try sign(zip), publicKey: testKey.publicKey.rawRepresentation,
+                                      bundleID: "dev.tverka.app", currentVersion: "1.2.0", workDir: tempDir())
         }
     }
 
     @Test func rejectsAnOlderOrSameVersion() throws {
         let zip = try makeZip(version: "1.2.0")
         #expect(throws: UpdateError.notNewer) {
-            try UpdatePackage.prepare(zip: zip, expectedSHA256: nil, bundleID: "dev.tverka.app",
-                                      currentVersion: "1.2.0", workDir: tempDir())
+            try UpdatePackage.prepare(zip: zip, signature: try sign(zip), publicKey: testKey.publicKey.rawRepresentation,
+                                      bundleID: "dev.tverka.app", currentVersion: "1.2.0", workDir: tempDir())
         }
     }
 
     @Test func acceptsTheOldAppNameToo() throws {
         let zip = try makeZip(appName: "tver-ka")
-        let ready = try UpdatePackage.prepare(zip: zip, expectedSHA256: nil, bundleID: "dev.tverka.app",
-                                              currentVersion: "1.2.0", workDir: tempDir())
+        let ready = try UpdatePackage.prepare(
+            zip: zip, signature: try sign(zip), publicKey: testKey.publicKey.rawRepresentation,
+            bundleID: "dev.tverka.app", currentVersion: "1.2.0", workDir: tempDir())
         #expect(ready.appURL.lastPathComponent == "tver-ka.app")
     }
 }

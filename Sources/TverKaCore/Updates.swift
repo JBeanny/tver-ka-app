@@ -64,9 +64,17 @@ public struct Release: Decodable, Sendable {
 
     public var version: SemanticVersion? { SemanticVersion(tagName) }
     public var zipAsset: Asset? { assets.first { $0.name.lowercased().hasSuffix(".zip") } }
-    public var checksumAsset: Asset? {
+    /// Detached Ed25519 signature over the zip (base64), made with the release key.
+    public var signatureAsset: Asset? {
         guard let zip = zipAsset else { return nil }
-        return assets.first { $0.name == zip.name + ".sha256" }
+        return assets.first { $0.name == zip.name + ".sig" }
+    }
+
+    /// Downloads must come from GitHub over HTTPS (local files only in test runs).
+    public static func isTrustedDownload(_ url: URL, allowLocal: Bool) -> Bool {
+        if url.isFileURL { return allowLocal }
+        guard url.scheme == "https", let host = url.host?.lowercased() else { return false }
+        return ["github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com"].contains(host)
     }
     public var notes: String { body ?? "" }
 
@@ -92,7 +100,8 @@ public struct Release: Decodable, Sendable {
 
 public enum UpdateError: Error, Equatable, LocalizedError {
     case server(Int)
-    case checksumMismatch
+    case badSignature
+    case untrustedSource
     case unzipFailed
     case noApp
     case wrongApp
@@ -103,7 +112,8 @@ public enum UpdateError: Error, Equatable, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .server(let code): "GitHub answered with an error (\(code)). Try again in a bit."
-        case .checksumMismatch: "The download didn't match its checksum, so it wasn't installed."
+        case .badSignature: "The update isn't signed by Tver Ka's release key, so it wasn't installed."
+        case .untrustedSource: "The update didn't come from GitHub, so it wasn't installed."
         case .unzipFailed: "Couldn't unpack the download."
         case .noApp: "The download didn't contain the app."
         case .wrongApp: "The download wasn't Tver Ka, so it wasn't installed."
@@ -121,31 +131,22 @@ public enum UpdatePackage {
         public var version: SemanticVersion
     }
 
-    public static func sha256(of url: URL) throws -> String {
-        let handle = try FileHandle(forReadingFrom: url)
-        defer { try? handle.close() }
-        var hasher = SHA256()
-        while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
-            hasher.update(data: chunk)
-        }
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
-    }
-
-    /// `shasum` output: "<64 hex>  <file>".
-    public static func parseChecksum(_ text: String) -> String? {
-        guard let token = text.split(whereSeparator: \.isWhitespace).first?.lowercased(),
-              token.count == 64, token.allSatisfy(\.isHexDigit)
+    /// A `.sig` file: the base64 of a 64-byte Ed25519 signature.
+    public static func parseSignature(_ text: String) -> Data? {
+        guard let data = Data(base64Encoded: text.trimmingCharacters(in: .whitespacesAndNewlines)), data.count == 64
         else { return nil }
-        return token
+        return data
     }
 
-    /// Verifies the checksum, unzips into `workDir`, and checks it's this app at a newer version.
+    /// Verifies the zip's signature against the app's built-in public key (mandatory: no signature,
+    /// no install), then unzips into `workDir` and checks it's this app at a newer version.
     public static func prepare(
-        zip: URL, expectedSHA256: String?, bundleID: String, currentVersion: String, workDir: URL
+        zip: URL, signature: Data?, publicKey: Data, bundleID: String, currentVersion: String, workDir: URL
     ) throws -> Ready {
-        if let expected = expectedSHA256, try sha256(of: zip) != expected.lowercased() {
-            throw UpdateError.checksumMismatch
-        }
+        guard let signature,
+              let key = try? Curve25519.Signing.PublicKey(rawRepresentation: publicKey),
+              key.isValidSignature(signature, for: try Data(contentsOf: zip, options: .mappedIfSafe))
+        else { throw UpdateError.badSignature }
         let out = workDir.appendingPathComponent("unpacked-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
         let ditto = Process()

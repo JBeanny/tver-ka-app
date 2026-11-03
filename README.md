@@ -86,7 +86,7 @@ The app lives only in the menu bar (no Dock icon). Look for the pink blob in sun
 
 To start it automatically, open the popover and choose **`…` › Launch at login**.
 
-**Updating:** Tver Ka updates itself. It checks GitHub once a day (switch that off in the update sheet), puts a pink dot on the **`…`** button when a new version is out, and **`…` › Update to x.y.z…** downloads it, checks it, and **replaces the app in place**, so you never end up with two copies. Your to-dos aren't touched. You can also check any time with **`…` › Check for Updates…**.
+**Updating:** Tver Ka updates itself. It checks GitHub once a day (switch that off in the update sheet), puts a pink dot on the **`…`** button when a new version is out, and **`…` › Update to x.y.z…** downloads it, **checks its signature** (every release is signed, and unsigned or tampered downloads are refused), and **replaces the app in place**, so you never end up with two copies. Your to-dos aren't touched. You can also check any time with **`…` › Check for Updates…**.
 
 > Coming from an older build called **tver-ka**? Install Tver Ka 1.2 or later any way you like. On first launch it moves the old `tver-ka.app` to the Trash and quits it if it's running. Your data, iCloud sync and iPhone Shortcut carry over, because the folders behind them keep their names.
 
@@ -227,12 +227,27 @@ Sources/
 Tests/TverKaCoreTests/ # Swift Testing suites
 Scripts/
   bundle.sh            # build and wrap into a .app (--install, --universal)
-  release.sh           # universal build, zipped for GitHub Releases
+  release.sh           # universal build, zipped and signed for GitHub Releases
+  release-key.swift    # create the update signing key (in your Keychain) and sign release zips
   make-icons.swift     # draws the app icon and writes AppIcon.icns
   make-shortcuts.swift # generates and signs the iPhone Shortcuts
 Shortcuts/             # signed "Add to Tver Ka" and "My Tver Ka to-dos"
 Resources/AppIcon.icns
 ```
+
+### Releasing
+
+Updates are signed with an Ed25519 key, so a hijacked GitHub account still can't push a fake update to people's Macs. The private key lives only in the maintainer's login Keychain. Installed apps carry the public key and refuse anything not signed by it.
+
+**Once:** create the key and commit its public half.
+
+```sh
+swift Scripts/release-key.swift keygen > Resources/update-public-key.txt
+```
+
+Back up the private key somewhere safe, such as a password manager (`security find-generic-password -s "Tver Ka release signing key" -w` prints it). If it's lost, installed copies can't accept future updates and everyone would need to reinstall by hand.
+
+**Each release:** bump [`VERSION`](VERSION), run `Scripts/release.sh`, and attach all three files from `build/` to a GitHub release: `Tver-Ka-<version>.zip`, `.zip.sha256` and `.zip.sig`. A build without `Resources/update-public-key.txt` won't install updates at all.
 
 ## Contributing
 

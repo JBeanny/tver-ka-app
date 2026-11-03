@@ -22,6 +22,10 @@ final class UpdateController {
 
     let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
     let bundleID = Bundle.main.bundleIdentifier ?? "dev.tverka.app"
+    /// Ed25519 public key for release signatures, baked in at build time. No key, no updates.
+    let publicKey = (Bundle.main.infoDictionary?["TverKaUpdatePublicKey"] as? String).flatMap { Data(base64Encoded: $0) }
+    /// Local file feeds are only for test runs that point the updater somewhere else on purpose.
+    private let allowLocalDownloads = ProcessInfo.processInfo.environment["TVERKA_UPDATE_FEED"] != nil
 
     init() {
         let defaults = SyncController.defaults
@@ -70,6 +74,11 @@ final class UpdateController {
         guard let release, let zipAsset = release.zipAsset, !isBusy else { return }
         let bundle = Bundle.main.bundleURL
         do {
+            guard let publicKey else { throw UpdateError.badSignature }
+            guard let signatureAsset = release.signatureAsset,
+                  Release.isTrustedDownload(zipAsset.downloadURL, allowLocal: allowLocalDownloads),
+                  Release.isTrustedDownload(signatureAsset.downloadURL, allowLocal: allowLocalDownloads)
+            else { throw signatureAssetMissing(release) }
             if bundle.path.contains("/AppTranslocation/") { throw UpdateError.translocated }
             let folder = bundle.deletingLastPathComponent()
             guard FileManager.default.isWritableFile(atPath: folder.path) else {
@@ -82,20 +91,23 @@ final class UpdateController {
             let zip = work.appendingPathComponent(zipAsset.name)
             let (downloaded, _) = try await URLSession.shared.download(from: zipAsset.downloadURL)
             try FileManager.default.moveItem(at: downloaded, to: zip)
-            var checksum: String?
-            if let sumAsset = release.checksumAsset {
-                let (data, _) = try await URLSession.shared.data(from: sumAsset.downloadURL)
-                checksum = UpdatePackage.parseChecksum(String(decoding: data, as: UTF8.self))
-            }
+            let (sigData, _) = try await URLSession.shared.data(from: signatureAsset.downloadURL)
+            let signature = UpdatePackage.parseSignature(String(decoding: sigData, as: UTF8.self))
 
             state = .installing
+            // Signature first: nothing is unpacked or trusted until it checks out.
             let ready = try UpdatePackage.prepare(
-                zip: zip, expectedSHA256: checksum, bundleID: bundleID, currentVersion: currentVersion, workDir: work)
+                zip: zip, signature: signature, publicKey: publicKey,
+                bundleID: bundleID, currentVersion: currentVersion, workDir: work)
             try launchSwap(newApp: ready.appURL, old: bundle, target: folder.appendingPathComponent("Tver Ka.app"), work: work)
             NSApp.terminate(nil)
         } catch {
             state = .failed((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
         }
+    }
+
+    private func signatureAssetMissing(_ release: Release) -> UpdateError {
+        release.signatureAsset == nil ? .badSignature : .untrustedSource
     }
 
     /// Waits for this process to quit, copies the new app next to the old one, removes the old one
@@ -112,6 +124,7 @@ final class UpdateController {
         rm -rf "$old"
         [ "$old" != "$target" ] && rm -rf "$target"
         mv "$staging" "$target" || exit 1
+        # Safe only because the zip's signature was verified against the built-in release key.
         /usr/bin/xattr -dr com.apple.quarantine "$target" 2>/dev/null
         if [ -n "$TVERKA_DATA_FILE" ]; then
           # Test runs relaunch with their scratch settings instead of as the real app.

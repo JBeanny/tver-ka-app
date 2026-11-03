@@ -20,6 +20,12 @@ cp "$BIN" "$APP/Contents/MacOS/TverKa"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp Shortcuts/*.shortcut "$APP/Contents/Resources/"
 
+# The update signing public key (safe to publish). Without it the app refuses to install updates.
+PUBKEY_ENTRY=""
+if [[ -s Resources/update-public-key.txt ]]; then
+  PUBKEY_ENTRY="<key>TverKaUpdatePublicKey</key><string>$(tr -d '[:space:]' < Resources/update-public-key.txt)</string>"
+fi
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -36,6 +42,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
+  $PUBKEY_ENTRY
 </dict>
 </plist>
 PLIST
