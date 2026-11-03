@@ -91,23 +91,48 @@ extension MenuBarIcon {
             NSGraphicsContext.current?.cgContext.beginTransparencyLayer(auxiliaryInfo: nil)
             defer { NSGraphicsContext.current?.cgContext.endTransparencyLayer() }
             if onBreak {
-                let cup = NSBezierPath(roundedRect: NSRect(x: 3, y: 6, width: 12, height: 10), xRadius: 3.5, yRadius: 3.5)
+                // Same mug as the design (24×24 grid): rounded bottom, open D handle, two wavy steam lines.
+                NSGraphicsContext.saveGraphicsState()
+                let fit = NSAffineTransform()
+                fit.translateX(by: -2.7, yBy: -3.35)
+                fit.scale(by: 1.1)
+                fit.concat()
+
+                let k: CGFloat = 0.5523 * 5
+                let cup = NSBezierPath()
+                cup.move(to: NSPoint(x: 4, y: 9))
+                cup.line(to: NSPoint(x: 16, y: 9))
+                cup.line(to: NSPoint(x: 16, y: 14))
+                cup.curve(to: NSPoint(x: 11, y: 19), controlPoint1: NSPoint(x: 16, y: 14 + k), controlPoint2: NSPoint(x: 11 + k, y: 19))
+                cup.line(to: NSPoint(x: 9, y: 19))
+                cup.curve(to: NSPoint(x: 4, y: 14), controlPoint1: NSPoint(x: 9 - k, y: 19), controlPoint2: NSPoint(x: 4, y: 14 + k))
+                cup.close()
                 lime.setFill()
                 cup.fill()
-                NSColor.labelColor.setStroke()
-                cup.lineWidth = 1.6
-                cup.stroke()
-                let handle = NSBezierPath(ovalIn: NSRect(x: 13.5, y: 8.5, width: 5, height: 5))
-                handle.lineWidth = 1.6
-                handle.stroke()
-                for x: CGFloat in [7, 11] {
-                    let steam = NSBezierPath()
-                    steam.move(to: NSPoint(x: x, y: 1.5))
-                    steam.curve(to: NSPoint(x: x, y: 4.5), controlPoint1: NSPoint(x: x + 1.2, y: 2.5), controlPoint2: NSPoint(x: x - 1.2, y: 3.5))
-                    steam.lineWidth = 1.2
-                    steam.lineCapStyle = .round
-                    steam.stroke()
+
+                let h: CGFloat = 0.5523 * 2.5
+                let handle = NSBezierPath()
+                handle.move(to: NSPoint(x: 16, y: 11))
+                handle.line(to: NSPoint(x: 17.5, y: 11))
+                handle.curve(to: NSPoint(x: 20, y: 13.5), controlPoint1: NSPoint(x: 17.5 + h, y: 11), controlPoint2: NSPoint(x: 20, y: 13.5 - h))
+                handle.curve(to: NSPoint(x: 17.5, y: 16), controlPoint1: NSPoint(x: 20, y: 13.5 + h), controlPoint2: NSPoint(x: 17.5 + h, y: 16))
+                handle.line(to: NSPoint(x: 16, y: 16))
+
+                let steam = NSBezierPath()
+                for x: CGFloat in [8, 12] {
+                    steam.move(to: NSPoint(x: x, y: 3.5))
+                    steam.curve(to: NSPoint(x: x + 1, y: 6), controlPoint1: NSPoint(x: x, y: 4.7), controlPoint2: NSPoint(x: x + 1, y: 4.8))
                 }
+
+                // Label color reads as the design's dark ink on a light menu bar and stays visible on a dark one.
+                NSColor.labelColor.setStroke()
+                for path in [cup, handle, steam] {
+                    path.lineWidth = 2.1
+                    path.lineCapStyle = .round
+                    path.lineJoinStyle = .round
+                    path.stroke()
+                }
+                NSGraphicsContext.restoreGraphicsState()
             } else {
                 base.draw(in: NSRect(origin: .zero, size: size))
                 let tomato = NSBezierPath(ovalIn: NSRect(x: 13, y: 0.8, width: 7.5, height: 7.5))
