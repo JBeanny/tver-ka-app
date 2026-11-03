@@ -57,7 +57,14 @@ enum Snapshots {
             _ = onBreak.tick(now: now.addingTimeInterval(-48), settings: focus.settings)
             focus.debugSet(timer: onBreak, askDone: task.id, now: now)
             shoot("focus-askdone", AnyView(RootView()))
+            for item in store.priorityItems + store.todayItems { store.toggleDone(item.id) }
+            for item in store.missedItems { store.delete(item.id) }
+            var free = PomodoroTimer()
+            free.start(task: nil, settings: focus.settings, now: now.addingTimeInterval(-60))
+            focus.debugSet(timer: free, now: now)
+            shoot("focus-empty", AnyView(RootView()))
             focus.debugSet(timer: PomodoroTimer(), now: now)
+            shoot("empty", AnyView(RootView()))
             shoot("focus-settings", AnyView(RootView(focusSettingsOpen: true)))
             shoot("focus-idle", AnyView(RootView()))
         }

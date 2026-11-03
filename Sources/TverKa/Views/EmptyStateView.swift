@@ -3,18 +3,22 @@ import SwiftUI
 struct EmptyStateView: View {
     var theme: Theme
     var doneToday: Int
+    /// Shrinks the mascot when something else (the focus card) needs the room.
+    var compact = false
     @State private var bob = false
 
     var body: some View {
-        VStack(spacing: 18) {
-            Spacer()
+        let size: CGFloat = compact ? 84 : 128
+        let scale = size / 180
+        VStack(spacing: compact ? 10 : 14) {
+            Spacer(minLength: 0)
             ZStack {
                 Mascot()
-                    .frame(width: 180, height: 180)
+                    .frame(width: size, height: size)
                     .rotationEffect(.degrees(bob ? -3 : -8))
-                    .offset(y: bob ? -4 : 2)
-                Sparkle(fill: Theme.lime).frame(width: 38, height: 38).offset(x: 80, y: -72)
-                Sparkle(fill: Theme.blue).frame(width: 26, height: 26).offset(x: -86, y: 62)
+                    .offset(y: bob ? -4 * scale : 2 * scale)
+                Sparkle(fill: Theme.lime).frame(width: 38 * scale, height: 38 * scale).offset(x: 80 * scale, y: -72 * scale)
+                Sparkle(fill: Theme.blue).frame(width: 26 * scale, height: 26 * scale).offset(x: -86 * scale, y: 62 * scale)
             }
             .accessibilityHidden(true)
             .onAppear {
@@ -22,12 +26,13 @@ struct EmptyStateView: View {
             }
             VStack(spacing: 6) {
                 Text("all clear, bestie")
-                    .font(.rounded(30, .black))
+                    .font(.rounded(compact ? 24 : 28, .black))
                     .foregroundStyle(theme.text)
                 Text("nothing on deck. touch grass or drop something new up top.")
                     .font(.rounded(14, .bold))
                     .foregroundStyle(theme.sub)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: 250)
             }
             if doneToday > 0 {
@@ -39,7 +44,7 @@ struct EmptyStateView: View {
                     .sticker(Theme.butter, line: theme.line, shadow: theme.shadow, radius: 12, offset: 2)
                     .rotationEffect(.degrees(2))
             }
-            Spacer()
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
     }

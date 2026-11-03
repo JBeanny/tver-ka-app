@@ -36,7 +36,7 @@ struct TodayView: View {
             }
             quickAdd
             if isEmpty {
-                EmptyStateView(theme: theme, doneToday: store.doneTodayCount)
+                EmptyStateView(theme: theme, doneToday: store.doneTodayCount, compact: focus.isActive)
             } else {
                 list
                 progress
