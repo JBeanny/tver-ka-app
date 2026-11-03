@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds tver-ka and wraps it into build/tver-ka.app (menu bar only, no Dock icon).
+# Builds Tver Ka and wraps it into "build/Tver Ka.app" (menu bar only, no Dock icon).
 # Usage: Scripts/bundle.sh [--install] [--universal]
 #   --install    copy the app to /Applications
 #   --universal  build for Apple Silicon and Intel (used for releases)
@@ -12,7 +12,7 @@ ARCH_FLAGS=()
 
 swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
 BIN="$(swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)/TverKa"
-APP="build/tver-ka.app"
+APP="build/Tver Ka.app"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
@@ -27,8 +27,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <dict>
   <key>CFBundleExecutable</key><string>TverKa</string>
   <key>CFBundleIdentifier</key><string>dev.tverka.app</string>
-  <key>CFBundleName</key><string>tver-ka</string>
-  <key>CFBundleDisplayName</key><string>tver-ka</string>
+  <key>CFBundleName</key><string>Tver Ka</string>
+  <key>CFBundleDisplayName</key><string>Tver Ka</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
@@ -44,7 +44,8 @@ codesign --force --sign - "$APP" >/dev/null
 echo "Built $APP ($VERSION)"
 
 if [[ " $* " == *" --install "* ]]; then
-  rm -rf "/Applications/tver-ka.app"
+  # Replace in place, including the pre-rename "tver-ka.app", so there's only ever one copy.
+  rm -rf "/Applications/tver-ka.app" "/Applications/Tver Ka.app"
   cp -R "$APP" /Applications/
-  echo "Installed to /Applications/tver-ka.app"
+  echo "Installed to /Applications/Tver Ka.app"
 fi

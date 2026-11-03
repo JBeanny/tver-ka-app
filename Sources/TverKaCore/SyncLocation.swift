@@ -1,6 +1,6 @@
 import Foundation
 
-/// Where tver-ka keeps things when syncing through iCloud Drive.
+/// Where Tver Ka keeps things when syncing through iCloud Drive.
 public struct SyncPaths: Sendable {
     /// The non-synced data file in Application Support.
     public var localData: URL

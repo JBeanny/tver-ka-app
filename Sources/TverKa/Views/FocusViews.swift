@@ -258,7 +258,7 @@ struct FocusSettingsView: View {
             .opacity(focus.isEnabled ? 1 : 0.45)
 
             Text(focus.notificationsDenied
-                 ? "notifications are off for tver-ka: allow them in System Settings › Notifications. the chime still plays."
+                 ? "notifications are off for Tver Ka: allow them in System Settings › Notifications. the chime still plays."
                  : "a notification and a little chime when each phase ends")
                 .font(.rounded(12, .heavy))
                 .foregroundStyle(focus.notificationsDenied ? Theme.danger : theme.sub)

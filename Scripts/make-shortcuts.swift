@@ -1,7 +1,7 @@
 #!/usr/bin/env swift
-// Generates the iPhone Shortcuts that talk to tver-ka through iCloud Drive, signed for anyone to import.
-//   "Add to tver-ka"      asks for a to-do and saves it to iCloud Drive/Shortcuts/tver-ka/inbox/<timestamp>.txt
-//   "My tver-ka to-dos"   shows iCloud Drive/Shortcuts/tver-ka/Today.md, which the Mac app keeps up to date
+// Generates the iPhone Shortcuts that talk to Tver Ka through iCloud Drive, signed for anyone to import.
+//   "Add to Tver Ka"      asks for a to-do and saves it to iCloud Drive/Shortcuts/tver-ka/inbox/<timestamp>.txt
+//   "My Tver Ka to-dos"   shows iCloud Drive/Shortcuts/tver-ka/Today.md, which the Mac app keeps up to date
 // Usage: swift Scripts/make-shortcuts.swift   → Shortcuts/*.shortcut
 import Foundation
 
@@ -58,7 +58,7 @@ let add = workflow([
         ]),
     ]),
     action("is.workflow.actions.notification", [
-        "WFNotificationActionTitle": "tver-ka",
+        "WFNotificationActionTitle": "Tver Ka",
         "WFNotificationActionBody": "added ✨ it'll pop up on your Mac in a few seconds",
         "WFNotificationActionSound": false,
     ]),
@@ -84,7 +84,7 @@ try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories:
 try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
 
 var failed = false
-for (name, flow) in [("Add to tver-ka", add), ("My tver-ka to-dos", show)] {
+for (name, flow) in [("Add to Tver Ka", add), ("My Tver Ka to-dos", show)] {
     let unsigned = tmp.appendingPathComponent("\(name).shortcut")
     let data = try PropertyListSerialization.data(fromPropertyList: flow, format: .binary, options: 0)
     try data.write(to: unsigned)

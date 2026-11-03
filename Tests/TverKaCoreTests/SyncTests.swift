@@ -194,7 +194,7 @@ func tempDir() -> URL {
 
         let md = TodayDigest.render(todos: [pri, today, missed, done], projects: [p], now: day(2026, 11, 2), calendar: utc)
 
-        #expect(md.contains("# tver-ka · Mon, Nov 2"))
+        #expect(md.contains("# Tver Ka · Mon, Nov 2"))
         #expect(md.contains("## Priority\n- stats set · uni · rolled ×3"))
         #expect(md.contains("## Today\n- gym · uni"))
         #expect(md.contains("## Missed\n- tix · uni · was due Sat, Oct 31"))

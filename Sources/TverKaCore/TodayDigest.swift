@@ -25,7 +25,7 @@ public enum TodayDigest {
             todos.filter { $0.status(now: now, calendar: calendar) == status }
         }
 
-        var out = ["# tver-ka · \(format.string(from: now))", "_updated \(time.string(from: now))_", ""]
+        var out = ["# Tver Ka · \(format.string(from: now))", "_updated \(time.string(from: now))_", ""]
         let priority = items(.priority).sorted { $0.rollCount > $1.rollCount }
         let today = items(.today)
         let missed = items(.missed)

@@ -14,12 +14,15 @@ struct RootView: View {
     @State private var managingProjects: Bool
     @State private var settingUpPhone: Bool
     @State private var focusSettingsOpen: Bool
+    @State private var updatesOpen: Bool
     private let projectsOpen: Bool
 
     init(
         screen: Screen = .today, editing: Todo.ID? = nil, managingProjects: Bool = false,
-        projectsOpen: Bool = false, settingUpPhone: Bool = false, focusSettingsOpen: Bool = false
+        projectsOpen: Bool = false, settingUpPhone: Bool = false, focusSettingsOpen: Bool = false,
+        updatesOpen: Bool = false
     ) {
+        _updatesOpen = State(initialValue: updatesOpen)
         _focusSettingsOpen = State(initialValue: focusSettingsOpen)
         _screen = State(initialValue: screen)
         _editing = State(initialValue: editing)
@@ -40,6 +43,7 @@ struct RootView: View {
                     manageProjects: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { managingProjects = true } },
                     setUpPhone: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { settingUpPhone = true } },
                     focusSettings: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { focusSettingsOpen = true } },
+                    checkUpdates: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { updatesOpen = true } },
                     projectsOpen: projectsOpen)
                 .transition(.move(edge: .leading).combined(with: .opacity))
             case .done:
@@ -90,6 +94,17 @@ struct RootView: View {
                     .frame(maxHeight: .infinity, alignment: .bottom)
                     .transition(.move(edge: .bottom))
             }
+
+            if updatesOpen {
+                Color.black.opacity(0.35)
+                    .ignoresSafeArea()
+                    .onTapGesture { close() }
+                    .transition(.opacity)
+                UpdateSheet(theme: theme, close: close)
+                    .padding(10)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                    .transition(.move(edge: .bottom))
+            }
         }
         .frame(width: 360, height: 640)
         .onAppear { store.rollOver() }
@@ -105,6 +120,7 @@ struct RootView: View {
             managingProjects = false
             settingUpPhone = false
             focusSettingsOpen = false
+            updatesOpen = false
         }
     }
 }

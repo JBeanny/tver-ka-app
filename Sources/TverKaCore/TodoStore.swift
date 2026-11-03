@@ -336,7 +336,7 @@ public final class TodoStore {
             try CoordinatedFile.write(try encoder.encode(file), to: fileURL)
             knownModificationDate = CoordinatedFile.modificationDate(fileURL)
         } catch {
-            NSLog("tver-ka: failed to save todos: \(error)")
+            NSLog("Tver Ka: failed to save todos: \(error)")
         }
         writeDigest()
     }

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/logo.png" width="128" height="128" alt="tver-ka app icon: a lime blob in sunglasses on a hot pink sticker">
+  <img src="docs/logo.png" width="128" height="128" alt="Tver Ka app icon: a lime blob in sunglasses on a hot pink sticker">
 </p>
 
-<h1 align="center">tver-ka</h1>
+<h1 align="center">Tver Ka</h1>
 
 <p align="center">
   <b>A playful menu bar to-do app for macOS where unfinished tasks don't disappear. They roll over to tomorrow and get louder.</b>
@@ -25,7 +25,7 @@
 
 ## Why
 
-Most to-do apps let yesterday's unfinished tasks quietly pile up somewhere you never look. tver-ka works differently:
+Most to-do apps let yesterday's unfinished tasks quietly pile up somewhere you never look. Tver Ka works differently:
 
 > If a to-do isn't done by midnight, it **slides to the next day** and gets a 🔥 **priority** sticker, with a counter showing how many days it's been carried over (`rolled ×3`).
 
@@ -41,7 +41,7 @@ You can't ignore it, but you can turn it off for any single task. Those tasks st
 - **Streaks.** The streak counts the days in a row you've finished at least one to-do.
 - **Menu bar icon.** A full-color mascot that's easy to spot, with your open count. A yellow dot means priority to-dos are waiting.
 - **Focus mode (optional).** A built-in Pomodoro timer: start a focus session on any to-do, earn a 🍅 per session, and see the countdown right in the menu bar. It's off until you turn it on.
-- **Add from your iPhone.** Turn on iCloud sync and use the included Shortcut: "Hey Siri, add to tver-ka", the Action button, or a home screen icon. To-dos land on your Mac within seconds.
+- **Add from your iPhone.** Turn on iCloud sync and use the included Shortcut: "Hey Siri, add to Tver Ka", the Action button, or a home screen icon. To-dos land on your Mac within seconds.
 - **Light, dark, or match system.**
 - **Native and private.** SwiftUI, no account, no server. Your data is a single JSON file, kept on your Mac or in your own iCloud Drive.
 
@@ -63,11 +63,11 @@ You can't ignore it, but you can turn it off for any single task. Those tasks st
 
 ### Download (easiest)
 
-1. Grab **`tver-ka-<version>.zip`** from the [latest release](https://github.com/JBeanny/tver-ka-app/releases/latest). It's one universal build for Apple Silicon and Intel Macs, and needs macOS 14 Sonoma or later.
-2. Unzip it and drag **tver-ka.app** into **Applications**.
-3. Open it. The first time, macOS will say it can't verify the developer. That's expected: tver-ka is a free hobby project and isn't notarized with a paid Apple Developer account. To allow it once:
-   - open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway** next to tver-ka, **or**
-   - run `xattr -dr com.apple.quarantine /Applications/tver-ka.app` in Terminal.
+1. Grab **`Tver-Ka-<version>.zip`** from the [latest release](https://github.com/JBeanny/tver-ka-app/releases/latest). It's one universal build for Apple Silicon and Intel Macs, and needs macOS 14 Sonoma or later.
+2. Unzip it and drag **Tver Ka.app** into **Applications**.
+3. Open it. The first time, macOS will say it can't verify the developer. That's expected: Tver Ka is a free hobby project and isn't notarized with a paid Apple Developer account. To allow it once:
+   - open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway** next to Tver Ka, **or**
+   - run `xattr -dr com.apple.quarantine "/Applications/Tver Ka.app"` in Terminal.
 
    After that it opens normally. If you'd rather not trust a prebuilt binary, build it yourself (below). It's the same code.
 
@@ -78,32 +78,36 @@ You can't ignore it, but you can turn it off for any single task. Those tasks st
 ```sh
 git clone https://github.com/JBeanny/tver-ka-app.git
 cd tver-ka-app
-Scripts/bundle.sh --install      # builds and copies tver-ka.app to /Applications
-open /Applications/tver-ka.app
+Scripts/bundle.sh --install      # builds and copies "Tver Ka.app" to /Applications
+open "/Applications/Tver Ka.app"
 ```
 
 The app lives only in the menu bar (no Dock icon). Look for the pink blob in sunglasses. If you use a menu bar manager or have a notch, it may start out in the hidden section, so drag it out once.
 
 To start it automatically, open the popover and choose **`…` › Launch at login**.
 
-**Updating:** download the newer release and replace the app, or, if you built from source, pull and run the install again. Your to-dos are stored outside the app, so they carry over.
+**Updating:** Tver Ka updates itself. It checks GitHub once a day (switch that off in the update sheet), puts a pink dot on the **`…`** button when a new version is out, and **`…` › Update to x.y.z…** downloads it, checks it, and **replaces the app in place**, so you never end up with two copies. Your to-dos aren't touched. You can also check any time with **`…` › Check for Updates…**.
+
+> Coming from an older build called **tver-ka**? Install Tver Ka 1.2 or later any way you like. On first launch it moves the old `tver-ka.app` to the Trash and quits it if it's running. Your data, iCloud sync and iPhone Shortcut carry over, because the folders behind them keep their names.
+
+If you built from source, pull and run the install again:
 
 ```sh
-git pull && pkill -f TverKa; Scripts/bundle.sh --install && open /Applications/tver-ka.app
+git pull && pkill -f TverKa; Scripts/bundle.sh --install && open "/Applications/Tver Ka.app"
 ```
 
 ## iPhone & iCloud
 
-tver-ka syncs through **your own iCloud Drive**. There's no server and no extra account, and no iPhone app to install. Adding from the phone uses Apple's **Shortcuts** app.
+Tver Ka syncs through **your own iCloud Drive**. There's no server and no extra account, and no iPhone app to install. Adding from the phone uses Apple's **Shortcuts** app.
 
 <p align="center"><img src="docs/screenshots/phone-setup-light.png" width="260" alt="Add from iPhone setup sheet"></p>
 
 **Set it up (once):**
 1. In the menu bar popover, open **`…` › Add from iPhone…**
 2. Turn on **sync with iCloud**. Your to-dos move to `iCloud Drive › tver-ka › todos.json`, and a backup of the local copy is kept.
-3. Click **add to Shortcuts**. The "Add to tver-ka" shortcut is added on your Mac and syncs to your iPhone through iCloud. (Optional: **+ list viewer** adds "My tver-ka to-dos", which shows today's list on the phone.)
+3. Click **add to Shortcuts**. The "Add to Tver Ka" shortcut is added on your Mac and syncs to your iPhone through iCloud. (Optional: **+ list viewer** adds "My Tver Ka to-dos", which shows today's list on the phone.)
 
-**Use it on iPhone:** run **Add to tver-ka** from Siri ("Hey Siri, add to tver-ka"), the Action button, a home screen icon, or the Shortcuts widget. Type or say the to-do and it appears on your Mac within about 5 seconds.
+**Use it on iPhone:** run **Add to Tver Ka** from Siri ("Hey Siri, add to Tver Ka"), the Action button, a home screen icon, or the Shortcuts widget. Type or say the to-do and it appears on your Mac within about 5 seconds.
 
 | You type | Result |
 | --- | --- |
@@ -121,7 +125,7 @@ In the Shortcuts app on iPhone, tap **+** and add:
 1. **Ask for Input** → type *Text*, prompt `what's the move?`
 2. **Save File** → input *Provided Input*, turn **Ask Where to Save** off, and set the destination path to `tver-ka/inbox/` + the **Current Date** variable (custom format `yyyyMMdd-HHmmss-SSS`) + `.txt`
 
-Name it **Add to tver-ka**.
+Name it **Add to Tver Ka**.
 </details>
 
 > **Good to know:** iCloud Drive sync is "last write wins". If two Macs edit at the exact same moment, one edit can be lost; iCloud keeps a conflict copy next to the file. For a single Mac plus an iPhone this doesn't come up.
@@ -139,7 +143,7 @@ An optional Pomodoro timer built into your to-dos. It's **off by default**: turn
 
 - **Focus on a to-do:** tap the 🍅▶ button on any row. Or tap the tomato in the header for a free session with no task.
 - **While it runs:** a focus card shows the countdown, the task, and pause / skip / stop controls, and the **menu bar shows the time left** (a cup means you're on a break, and the icon dims while paused).
-- **When a session ends:** you get a notification and a chime, the task earns a tomato (shown as 🍅×N on the row), and tver-ka asks whether that to-do is done. The break starts by itself.
+- **When a session ends:** you get a notification and a chime, the task earns a tomato (shown as 🍅×N on the row), and Tver Ka asks whether that to-do is done. The break starts by itself.
 - **Classic timings:** 25 min focus, 5 min short break, and a 15 min long break every 4 sessions, all adjustable in **`…` › Focus settings…**, along with auto-start and sound.
 - **What's stored where:** tomatoes stay with a to-do when it rolls over, so carried-over tasks show the effort already spent. Your settings and the running timer are per Mac. Tomato counts live in your data file, so they sync with iCloud too.
 
@@ -167,8 +171,8 @@ It's plain, readable JSON, so you can back it up or inspect it. With iCloud sync
 ```sh
 swift build           # compile
 swift test            # run the core test suite
-Scripts/bundle.sh     # build build/tver-ka.app without installing
-Scripts/release.sh    # universal build + build/tver-ka-<VERSION>.zip for a GitHub release
+Scripts/bundle.sh     # build "build/Tver Ka.app" without installing
+Scripts/release.sh    # universal build + build/Tver-Ka-<VERSION>.zip for a GitHub release
 ```
 
 The version number lives in [`VERSION`](VERSION).
@@ -181,10 +185,11 @@ Debug settings (set them as environment variables and run the binary directly):
 | `TVERKA_DATA_FILE=/tmp/test.json` | Use a scratch data file instead of your real one. This also turns off real iCloud and uses separate settings, so a test run never touches your synced data. |
 | `TVERKA_ICLOUD_ROOT=/tmp/fake-icloud` | Use a fake `~/Library/Mobile Documents` (create `com~apple~CloudDocs` inside it) so sync testing never touches real iCloud. It also uses separate settings. |
 | `TVERKA_FOCUS_SCALE=60` | Run Focus mode 60× faster (each minute takes a second) to watch a full cycle quickly |
+| `TVERKA_UPDATE_FEED=file:///tmp/latest.json` | Read release info from another URL (a GitHub-style JSON) instead of the real latest release |
 | `TVERKA_SNAPSHOT_DIR=/tmp/shots` | Render every screen (light and dark) plus the menu bar icon to PNGs, then quit |
 
 ```sh
-TVERKA_DAY_OFFSET=1 TVERKA_DATA_FILE=/tmp/test.json build/tver-ka.app/Contents/MacOS/TverKa
+TVERKA_DAY_OFFSET=1 TVERKA_DATA_FILE=/tmp/test.json "build/Tver Ka.app/Contents/MacOS/TverKa"
 ```
 
 The app icon is drawn in code. After changing it, regenerate `Resources/AppIcon.icns` with:
@@ -212,10 +217,12 @@ Sources/
     InboxImporter.swift#   parses and imports to-dos dropped in by the iPhone Shortcut
     TodayDigest.swift  #   the Today.md summary for the phone
     Pomodoro.swift     #   Focus mode settings and the Pomodoro timer state machine
+    Updates.swift      #   release lookup, version compare, and download verification
   TverKa/              # the SwiftUI menu bar app
     TverKaApp.swift    #   MenuBarExtra, day-change / wake / sync watcher
     SyncController.swift # the iCloud sync setting and inbox polling
     FocusController.swift # Focus mode: ticking, tomatoes, sound and notifications
+    UpdateController.swift # in-place updates from GitHub Releases, and one-copy-only cleanup
     Views/             #   Today, done pile, task options, projects, theme, icons
 Tests/TverKaCoreTests/ # Swift Testing suites
 Scripts/
@@ -223,7 +230,7 @@ Scripts/
   release.sh           # universal build, zipped for GitHub Releases
   make-icons.swift     # draws the app icon and writes AppIcon.icns
   make-shortcuts.swift # generates and signs the iPhone Shortcuts
-Shortcuts/             # signed "Add to tver-ka" and "My tver-ka to-dos"
+Shortcuts/             # signed "Add to Tver Ka" and "My Tver Ka to-dos"
 Resources/AppIcon.icns
 ```
 

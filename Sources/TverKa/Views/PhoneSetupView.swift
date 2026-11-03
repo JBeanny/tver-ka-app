@@ -46,7 +46,7 @@ struct PhoneSetupView: View {
             }
 
             HStack(spacing: 8) {
-                Button { open("Add to tver-ka") } label: {
+                Button { open("Add to Tver Ka") } label: {
                     Label("add to Shortcuts", systemImage: "plus")
                         .labelStyle(TightLabel())
                         .font(.rounded(13, .black))
@@ -55,7 +55,7 @@ struct PhoneSetupView: View {
                         .sticker(Theme.pink, line: theme.line, shadow: theme.shadow, radius: 13)
                 }
                 .buttonStyle(PressableStyle())
-                Button { open("My tver-ka to-dos") } label: {
+                Button { open("My Tver Ka to-dos") } label: {
                     Text("+ list viewer")
                         .font(.rounded(13, .black))
                         .foregroundStyle(theme.text)
@@ -67,7 +67,7 @@ struct PhoneSetupView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                tip("mic", "say \u{201C}Hey Siri, add to tver-ka\u{201D}")
+                tip("mic", "say \u{201C}Hey Siri, add to Tver Ka\u{201D}")
                 tip("number", "#work send invoice !  →  work, priority")
                 tip("iphone", "put it on the Action button or home screen")
             }

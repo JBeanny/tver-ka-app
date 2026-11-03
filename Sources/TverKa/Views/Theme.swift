@@ -106,12 +106,12 @@ struct Wordmark: View {
     var theme: Theme
     var body: some View {
         ZStack {
-            Text("tver-ka").foregroundStyle(theme.line).offset(x: 2, y: 2)
-            Text("tver-ka").foregroundStyle(theme.brand)
+            Text("Tver Ka").foregroundStyle(theme.line).offset(x: 2, y: 2)
+            Text("Tver Ka").foregroundStyle(theme.brand)
         }
         .font(.rounded(26, .black))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("tver-ka")
+        .accessibilityLabel("Tver Ka")
     }
 }
 

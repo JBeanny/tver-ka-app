@@ -5,7 +5,7 @@ import TverKaCore
 /// Debug aid: `TVERKA_SNAPSHOT_DIR=/some/dir` renders each screen in light and dark to PNGs, then quits.
 @MainActor
 enum Snapshots {
-    static func render(store: TodoStore, sync: SyncController, focus: FocusController, to dir: URL) {
+    static func render(store: TodoStore, sync: SyncController, focus: FocusController, updates: UpdateController, to dir: URL) {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let editing = store.priorityItems.first?.id ?? store.todayItems.first?.id
         let screens: [(String, AnyView)] = [
@@ -19,7 +19,7 @@ enum Snapshots {
         let wasShowingAll = store.showingAll
         func shoot(_ name: String, _ view: AnyView) {
             for scheme in [ColorScheme.light, .dark] {
-                let host = NSHostingView(rootView: view.environment(store).environment(sync).environment(focus).environment(\.colorScheme, scheme))
+                let host = NSHostingView(rootView: view.environment(store).environment(sync).environment(focus).environment(updates).environment(\.colorScheme, scheme))
                 host.frame = NSRect(x: 0, y: 0, width: 360, height: 640)
                 let window = NSWindow(
                     contentRect: NSRect(x: -10_000, y: -10_000, width: 360, height: 640),
@@ -60,6 +60,13 @@ enum Snapshots {
             focus.debugSet(timer: PomodoroTimer(), now: now)
             shoot("focus-settings", AnyView(RootView(focusSettingsOpen: true)))
             shoot("focus-idle", AnyView(RootView()))
+        }
+        let sample = #"{"tag_name":"v1.3.0","html_url":"https://github.com/JBeanny/tver-ka-app/releases/tag/v1.3.0","body":"**New**\n- Focus mode: a pomodoro timer for your to-dos\n- Pick the project when adding from all projects\n\n**Fixed**\n- Settings cards slide in with their sheet","assets":[{"name":"Tver-Ka-1.3.0.zip","browser_download_url":"https://example.com/x.zip","size":1}]}"#
+        if let release = try? JSONDecoder().decode(Release.self, from: Data(sample.utf8)) {
+            updates.debugShow(release, state: .available)
+            shoot("update-available", AnyView(RootView(updatesOpen: true)))
+            updates.debugShow(nil, state: .upToDate)
+            shoot("update-current", AnyView(RootView(updatesOpen: true)))
         }
         renderMenuBarIcons(to: dir)
         exit(0)

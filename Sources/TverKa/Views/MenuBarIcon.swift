@@ -65,7 +65,7 @@ enum MenuBarIcon {
             return true
         }
         image.isTemplate = false
-        image.accessibilityDescription = hot ? "tver-ka, priority to-dos waiting" : "tver-ka"
+        image.accessibilityDescription = hot ? "Tver Ka, priority to-dos waiting" : "Tver Ka"
         cache[hot] = image
         return image
     }
@@ -147,7 +147,7 @@ extension MenuBarIcon {
             return true
         }
         result.isTemplate = false
-        result.accessibilityDescription = onBreak ? "tver-ka, on a break" : "tver-ka, focusing"
+        result.accessibilityDescription = onBreak ? "Tver Ka, on a break" : "Tver Ka, focusing"
         focusCache[key] = result
         return result
     }

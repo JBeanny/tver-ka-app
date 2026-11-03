@@ -6,12 +6,14 @@ struct TodayView: View {
     @Environment(TodoStore.self) private var store
     @Environment(SyncController.self) private var sync
     @Environment(FocusController.self) private var focus
+    @Environment(UpdateController.self) private var updates
     var theme: Theme
     var showDone: () -> Void
     var edit: (Todo.ID) -> Void
     var manageProjects: () -> Void
     var setUpPhone: () -> Void
     var focusSettings: () -> Void
+    var checkUpdates: () -> Void
 
     @State private var draft = ""
     @State var projectsOpen = false
@@ -120,7 +122,7 @@ struct TodayView: View {
                     do {
                         if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
                     } catch {
-                        NSLog("tver-ka: launch at login failed: \(error)")
+                        NSLog("Tver Ka: launch at login failed: \(error)")
                     }
                 }))
             Toggle("Sync with iCloud", isOn: Binding(get: { sync.isEnabled }, set: { sync.setEnabled($0) }))
@@ -134,13 +136,25 @@ struct TodayView: View {
                 ForEach(Appearance.allCases) { Text($0.title).tag($0) }
             }
             Divider()
-            Button("Quit tver-ka") { NSApp.terminate(nil) }
+            Button(updates.release.flatMap(\.version).map { "Update to \($0)…" } ?? "Check for Updates…", action: checkUpdates)
+            Divider()
+            Button("Quit Tver Ka") { NSApp.terminate(nil) }
                 .keyboardShortcut("q")
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 15, weight: .black))
                 .foregroundStyle(theme.sub)
                 .frame(width: 24, height: 40)
+                .overlay(alignment: .topTrailing) {
+                    if updates.isUpdateAvailable {
+                        Circle()
+                            .fill(Theme.pink)
+                            .overlay(Circle().strokeBorder(theme.line, lineWidth: 1.5))
+                            .frame(width: 9, height: 9)
+                            .offset(x: 1, y: 8)
+                            .accessibilityLabel("Update available")
+                    }
+                }
                 .contentShape(Rectangle())
         }
         .menuStyle(.button)

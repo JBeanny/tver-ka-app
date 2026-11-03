@@ -7,6 +7,7 @@ struct TverKaApp: App {
     @State private var store: TodoStore
     @State private var sync: SyncController
     @State private var focus: FocusController
+    @State private var updates: UpdateController
     @State private var watcher: DayWatcher
 
     init() {
@@ -14,16 +15,19 @@ struct TverKaApp: App {
         let store = TodoStore(fileURL: SyncController.launchDataFile(paths), now: AppEnvironment.now)
         let sync = SyncController(store: store, paths: paths)
         let focus = FocusController(store: store)
+        let updates = UpdateController()
         _store = State(initialValue: store)
         _sync = State(initialValue: sync)
         _focus = State(initialValue: focus)
-        _watcher = State(initialValue: DayWatcher(store: store, sync: sync, focus: focus))
+        _updates = State(initialValue: updates)
+        _watcher = State(initialValue: DayWatcher(store: store, sync: sync, focus: focus, updates: updates))
+        DispatchQueue.main.async { LaunchHygiene.run() }
         if AppEnvironment.snapshotDir == nil {
             DispatchQueue.main.async { sync.tick() }
         }
         DispatchQueue.main.async { Appearance.saved.apply() }
         if let dir = AppEnvironment.snapshotDir {
-            DispatchQueue.main.async { Snapshots.render(store: store, sync: sync, focus: focus, to: dir) }
+            DispatchQueue.main.async { Snapshots.render(store: store, sync: sync, focus: focus, updates: updates, to: dir) }
         }
     }
 
@@ -33,6 +37,7 @@ struct TverKaApp: App {
                 .environment(store)
                 .environment(sync)
                 .environment(focus)
+                .environment(updates)
         } label: {
             HStack(spacing: 3) {
                 if focus.isActive {
@@ -84,7 +89,7 @@ final class DayWatcher {
     private var tokens: [NSObjectProtocol] = []
     private var timer: Timer?
 
-    init(store: TodoStore, sync: SyncController, focus: FocusController) {
+    init(store: TodoStore, sync: SyncController, focus: FocusController, updates: UpdateController) {
         let roll: @Sendable (Notification) -> Void = { _ in
             Task { @MainActor in
                 sync.tick()
@@ -100,6 +105,7 @@ final class DayWatcher {
             Task { @MainActor in
                 sync.tick()
                 store.rollOver()
+                updates.autoCheckIfDue()
             }
         }
     }

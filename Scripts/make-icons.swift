@@ -1,5 +1,5 @@
 #!/usr/bin/env swift
-// Draws the tver-ka app icon and writes Resources/AppIcon.icns (plus a 1024px preview PNG).
+// Draws the Tver Ka app icon and writes Resources/AppIcon.icns (plus a 1024px preview PNG).
 // Usage: swift Scripts/make-icons.swift
 import AppKit
 
