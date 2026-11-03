@@ -35,7 +35,8 @@ You can't ignore it, but you can turn it off for any single task. Those tasks st
 
 - **Auto-roll.** Unfinished to-dos move to today, jump to the top as priority, and count every skipped day, even if your Mac was asleep or the app was closed.
 - **Per-task control.** Switch auto-roll off for a to-do and it becomes *missed* instead, with "bring to today" and "let it go" buttons.
-- **Projects.** Keep separate lists (work, uni, personal…), each with its own color. Switch with a dropdown, or pick **all projects** to work through everything in one list.
+- **Projects.** Keep separate lists (work, uni, personal…), each with its own color. Switch with a dropdown, or pick **all projects** to work through everything in one list. There, a picker in the add field chooses which project new to-dos go to.
+- **Typing shortcuts.** In the add field, `#work send invoice` files it under *work* and a trailing `!` makes it priority. It's the same syntax as the iPhone Shortcut.
 - **The done pile.** Finished to-dos stay out of the way behind one small button, grouped by day, and each one can be undone.
 - **Streaks.** The streak counts the days in a row you've finished at least one to-do.
 - **Menu bar icon.** A full-color mascot that's easy to spot, with your open count. A yellow dot means priority to-dos are waiting.
@@ -161,7 +162,7 @@ Debug settings (set them as environment variables and run the binary directly):
 | Variable | Effect |
 | --- | --- |
 | `TVERKA_DAY_OFFSET=1` | Pretend it's tomorrow, to watch rollover happen |
-| `TVERKA_DATA_FILE=/tmp/test.json` | Use a scratch data file instead of your real one |
+| `TVERKA_DATA_FILE=/tmp/test.json` | Use a scratch data file instead of your real one. This also turns off real iCloud and uses separate settings, so a test run never touches your synced data. |
 | `TVERKA_ICLOUD_ROOT=/tmp/fake-icloud` | Use a fake `~/Library/Mobile Documents` (create `com~apple~CloudDocs` inside it) so sync testing never touches real iCloud. It also uses separate settings. |
 | `TVERKA_SNAPSHOT_DIR=/tmp/shots` | Render every screen (light and dark) plus the menu bar icon to PNGs, then quit |
 

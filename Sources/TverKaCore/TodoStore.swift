@@ -81,6 +81,14 @@ public final class TodoStore {
         save()
     }
 
+    /// Picks where new to-dos go while viewing all projects, without leaving that view.
+    public func setAddTarget(_ id: Project.ID) {
+        reloadIfChangedExternally()
+        guard projects.contains(where: { $0.id == id }), id != activeProjectID else { return }
+        activeProjectID = id
+        save()
+    }
+
     public func showAll() {
         reloadIfChangedExternally()
         guard !showingAll else { return }
@@ -189,6 +197,12 @@ public final class TodoStore {
 
     public func add(_ title: String) {
         add(title, projectNamed: nil, priority: false)
+    }
+
+    /// Adds what was typed in the quick-add field, honoring `#project` and a trailing `!` like the iPhone inbox.
+    public func addTyped(_ text: String) {
+        guard let item = InboxParser.parse(text) else { return }
+        add(item.title, projectNamed: item.projectName, priority: item.priority)
     }
 
     /// Adds a to-do to the project with this name (case-insensitive), or the active project if none matches.

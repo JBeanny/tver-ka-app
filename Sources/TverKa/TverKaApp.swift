@@ -49,8 +49,17 @@ enum AppEnvironment {
     static let dayOffset = Double(env["TVERKA_DAY_OFFSET"] ?? "") ?? 0
     static let snapshotDir = env["TVERKA_SNAPSHOT_DIR"].map { URL(fileURLWithPath: $0) }
     static let dataFile = env["TVERKA_DATA_FILE"].map { URL(fileURLWithPath: $0) } ?? TodoStore.defaultFileURL
-    static let usesFakeICloud = env["TVERKA_ICLOUD_ROOT"] != nil
-    static let iCloudRoot = env["TVERKA_ICLOUD_ROOT"].map { URL(fileURLWithPath: $0) } ?? SyncPaths.defaultICloudRoot
+    /// Any debug data override isolates the run from the real iCloud Drive and the real settings,
+    /// so a scratch run can never read or write the user's synced to-dos.
+    static let usesFakeICloud = env["TVERKA_ICLOUD_ROOT"] != nil || env["TVERKA_DATA_FILE"] != nil
+    static let iCloudRoot: URL = {
+        if let root = env["TVERKA_ICLOUD_ROOT"] { return URL(fileURLWithPath: root) }
+        if env["TVERKA_DATA_FILE"] != nil {
+            // No iCloud at all: a path that never exists, so sync reads as unavailable.
+            return FileManager.default.temporaryDirectory.appendingPathComponent("tverka-no-icloud-\(UUID().uuidString)")
+        }
+        return SyncPaths.defaultICloudRoot
+    }()
 
     @Sendable static func now() -> Date {
         Date().addingTimeInterval(dayOffset * 86_400)

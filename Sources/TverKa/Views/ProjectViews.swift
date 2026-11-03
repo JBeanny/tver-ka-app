@@ -63,6 +63,55 @@ struct ProjectTag: View {
     }
 }
 
+/// Inside the quick-add field while viewing all projects: picks which project new to-dos go to.
+struct AddTargetMenu: View {
+    @Environment(TodoStore.self) private var store
+    var theme: Theme
+
+    var body: some View {
+        let target = store.activeProject
+        Menu {
+            Section("add to") {
+                ForEach(store.projects) { project in
+                    Button {
+                        store.setAddTarget(project.id)
+                    } label: {
+                        if project.id == target.id {
+                            Label(project.name, systemImage: "checkmark")
+                        } else {
+                            Text(project.name)
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                ProjectDot(color: target.color, line: theme.line, size: 11)
+                Text(target.name)
+                    .font(.rounded(12, .black))
+                    .foregroundStyle(theme.text)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 84, alignment: .leading)
+                    .fixedSize(horizontal: true, vertical: false)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .black))
+                    .foregroundStyle(theme.sub)
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 30)
+            .sticker(theme.bg, line: theme.line, radius: 10, lineWidth: 2)
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Choose which project new to-dos go to")
+        .accessibilityLabel("Add to project: \(target.name)")
+    }
+}
+
 /// The pill under the header that opens the project dropdown.
 struct ProjectPill: View {
     @Environment(TodoStore.self) private var store

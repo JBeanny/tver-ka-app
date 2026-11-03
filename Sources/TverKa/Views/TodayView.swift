@@ -137,16 +137,22 @@ struct TodayView: View {
 
     private var quickAdd: some View {
         HStack(spacing: 8) {
-            TextField("", text: $draft, prompt: Text(store.showingAll ? "drop a to-do → \(store.activeProject.name)" : "drop a to-do…").foregroundStyle(theme.sub))
-                .textFieldStyle(.plain)
-                .font(.rounded(15, .bold))
-                .foregroundStyle(theme.text)
-                .focused($addFocused)
-                .onSubmit(add)
-                .padding(.horizontal, 14)
-                .frame(height: 44)
-                .sticker(theme.card, line: theme.line, radius: 14)
-                .accessibilityLabel("New to-do")
+            HStack(spacing: 6) {
+                if store.showingAll {
+                    AddTargetMenu(theme: theme)
+                }
+                TextField("", text: $draft, prompt: Text("drop a to-do…").foregroundStyle(theme.sub))
+                    .textFieldStyle(.plain)
+                    .font(.rounded(15, .bold))
+                    .foregroundStyle(theme.text)
+                    .focused($addFocused)
+                    .onSubmit(add)
+                    .accessibilityLabel("New to-do")
+            }
+            .padding(.leading, store.showingAll ? 7 : 14)
+            .padding(.trailing, 14)
+            .frame(height: 44)
+            .sticker(theme.card, line: theme.line, radius: 14)
             Button(action: add) {
                 Image(systemName: "plus")
                     .font(.system(size: 20, weight: .black))
@@ -160,7 +166,7 @@ struct TodayView: View {
     }
 
     private func add() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { store.add(draft) }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { store.addTyped(draft) }
         draft = ""
     }
 

@@ -187,4 +187,55 @@ import Testing
         s.add("x")
         #expect(s.project(for: s.todos[0])?.name == "personal")
     }
+
+    @Test func addTargetChangesWhereNewTodosGoWithoutLeavingAllView() {
+        let file = tempFile()
+        let s = store(file)
+        let personal = s.projects[0]
+        let work = s.addProject("work")
+        s.selectProject(personal.id)
+        s.showAll()
+
+        s.setAddTarget(work.id)
+        s.add("from all view")
+
+        #expect(s.showingAll)
+        #expect(s.todos.last?.projectID == work.id)
+        let reloaded = store(file)
+        #expect(reloaded.showingAll)
+        #expect(reloaded.activeProject.id == work.id)
+    }
+
+    @Test func addTargetIgnoresUnknownProjects() {
+        let s = store(tempFile())
+        let before = s.activeProjectID
+        s.setAddTarget(UUID())
+        #expect(s.activeProjectID == before)
+    }
+
+    @Test func typedAddUnderstandsProjectTagsAndPriority() {
+        let s = store(tempFile())
+        let personal = s.projects[0]
+        let work = s.addProject("work")
+        s.setAddTarget(personal.id)
+
+        s.addTyped("#Work ship it !")
+        s.addTyped("plain")
+        s.addTyped("#nope x")
+
+        let ship = s.todos.first { $0.title == "ship it" }
+        #expect(ship?.projectID == work.id)
+        #expect(ship?.isPriority == true)
+        #expect(s.todos.first { $0.title == "plain" }?.projectID == personal.id)
+        #expect(s.todos.first { $0.title == "x" }?.projectID == personal.id)
+        #expect(s.activeProjectID == personal.id)
+    }
+
+    @Test func typedAddIgnoresBlankAndTagOnlyInput() {
+        let s = store(tempFile())
+        s.addProject("work")
+        s.addTyped("   ")
+        s.addTyped("#work")
+        #expect(s.todos.isEmpty)
+    }
 }
