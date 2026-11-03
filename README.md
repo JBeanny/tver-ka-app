@@ -40,9 +40,10 @@ You can't ignore it, but you can turn it off for any single task. Those tasks st
 - **The done pile.** Finished to-dos stay out of the way behind one small button, grouped by day, and each one can be undone.
 - **Streaks.** The streak counts the days in a row you've finished at least one to-do.
 - **Menu bar icon.** A full-color mascot that's easy to spot, with your open count. A yellow dot means priority to-dos are waiting.
-- **Focus mode (optional).** A built-in Pomodoro timer: start a focus session on any to-do, earn a 🍅 per session, and see the countdown right in the menu bar. It's off until you turn it on.
+- **Focus mode (optional).** A built-in Pomodoro timer: start a focus session on any to-do, earn a 🍅 per session, and see the countdown right in the menu bar. It's off until you turn it on. [More below](#focus-mode-pomodoro).
 - **Add from your iPhone.** Turn on iCloud sync and use the included Shortcut: "Hey Siri, add to Tver Ka", the Action button, or a home screen icon. To-dos land on your Mac within seconds.
 - **Light, dark, or match system.**
+- **Updates itself.** Checks GitHub daily, then installs signed updates in place with one click, so you never end up with two copies.
 - **Native and private.** SwiftUI, no account, no server. Your data is a single JSON file, kept on your Mac or in your own iCloud Drive.
 
 <p align="center">
@@ -55,8 +56,9 @@ You can't ignore it, but you can turn it off for any single task. Those tasks st
   <img src="docs/screenshots/projects-manage-light.png" width="240" alt="Manage projects sheet">
 </p>
 <p align="center">
-  <img src="docs/screenshots/menubar-light.png" width="240" alt="Menu bar icon on a light menu bar, normal and with the priority dot">
-  <img src="docs/screenshots/menubar-dark.png" width="240" alt="Menu bar icon on a dark menu bar, normal and with the priority dot">
+  <img src="docs/screenshots/menubar-light.png" width="380" alt="Menu bar icons on a light menu bar: normal, priority waiting, focusing, on a break, paused">
+  <br>
+  <img src="docs/screenshots/menubar-dark.png" width="380" alt="Menu bar icons on a dark menu bar: normal, priority waiting, focusing, on a break, paused">
 </p>
 
 ## Install
@@ -135,17 +137,47 @@ Name it **Add to Tver Ka**.
 ## Focus mode (Pomodoro)
 
 <p align="center">
-  <img src="docs/screenshots/focus-running-light.png" width="240" alt="A focus session running on a to-do">
-  <img src="docs/screenshots/focus-settings-light.png" width="240" alt="Focus mode settings">
+  <img src="docs/screenshots/focus-running-light.png" width="240" alt="A focus session running on a to-do, with the countdown card">
+  <img src="docs/screenshots/focus-askdone-light.png" width="240" alt="On a break after a session, asking whether the to-do is done">
+  <img src="docs/screenshots/focus-settings-light.png" width="240" alt="Focus mode settings: timings, auto-start and sound">
 </p>
 
-An optional Pomodoro timer built into your to-dos. It's **off by default**: turn it on in **`…` › Focus mode (pomodoro)**.
+The [Pomodoro Technique](https://en.wikipedia.org/wiki/Pomodoro_Technique), built into your to-dos: work in short focused sprints with breaks in between, and see where your effort actually went. It's **optional and off by default**, so if you don't want it, nothing changes.
 
-- **Focus on a to-do:** tap the 🍅▶ button on any row. Or tap the tomato in the header for a free session with no task.
-- **While it runs:** a focus card shows the countdown, the task, and pause / skip / stop controls, and the **menu bar shows the time left** (a cup means you're on a break, and the icon dims while paused).
-- **When a session ends:** you get a notification and a chime, the task earns a tomato (shown as 🍅×N on the row), and Tver Ka asks whether that to-do is done. The break starts by itself.
-- **Classic timings:** 25 min focus, 5 min short break, and a 15 min long break every 4 sessions, all adjustable in **`…` › Focus settings…**, along with auto-start and sound.
-- **What's stored where:** tomatoes stay with a to-do when it rolls over, so carried-over tasks show the effort already spent. Your settings and the running timer are per Mac. Tomato counts live in your data file, so they sync with iCloud too.
+**Turn it on:** **`…` › Focus mode (pomodoro)**. The first time, macOS asks whether Tver Ka can send notifications.
+
+**How a session goes:**
+1. **Start.** Tap the 🍅▶ button on any to-do row to focus on that task, or the tomato in the header for a free session with no task.
+2. **Focus.** A red card replaces the greeting, with a big countdown, the task you're on, a progress bar, and pause / skip / stop. The task gets a dashed outline and "focusing…", and the **menu bar shows the time left**, so you don't need to open anything.
+3. **Session done.** A notification and a little chime. The task earns a tomato (🍅×N on its row), the card turns lime for the break, and Tver Ka asks: *"nice! is it done?"* Tap **done** to check it off, or **keep going**. The notification has quick **Mark done** and **Start break** buttons too.
+4. **Repeat.** Every 4th session earns a long break.
+
+**In the menu bar:**
+
+| Icon | Means |
+| --- | --- |
+| Mascot + count | No session running: the number of open to-dos |
+| Mascot with a 🍅 + `18:42` | Focusing, with the time left |
+| Lime mug + `04:12` | On a break |
+| Dimmed + time | Paused |
+
+**Timings** (all adjustable in **`…` › Focus settings…**):
+
+| Setting | Default | Range |
+| --- | --- | --- |
+| Focus | 25 min | 5–90 min |
+| Short break | 5 min | 1–30 min |
+| Long break | 15 min | 5–60 min |
+| Long break every | 4 sessions | 2–8 |
+| Auto-start breaks | on | |
+| Auto-start next focus | off | |
+| Sound | on | |
+
+**Good to know:**
+- The timer follows the real clock, so it stays accurate through sleep and lid-close, and a running session survives quitting the app.
+- Tomatoes stay with a to-do when it rolls over, so a carried-over task shows the effort already spent. They also appear in the done pile and in the iPhone `Today.md`.
+- Settings and the running timer are per Mac. Tomato counts live in your data file, so they sync through iCloud with everything else.
+- Turning Focus mode off hides the buttons, card and counts, but keeps any tomatoes you've earned.
 
 ## How rollover works
 
