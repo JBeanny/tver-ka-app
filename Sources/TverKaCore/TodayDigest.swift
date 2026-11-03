@@ -17,7 +17,9 @@ public enum TodayDigest {
 
         let names = Dictionary(uniqueKeysWithValues: projects.map { ($0.id, $0.name) })
         func line(_ t: Todo, extra: String? = nil) -> String {
-            ["- \(t.title)", t.projectID.flatMap { names[$0] }, extra].compactMap { $0 }.joined(separator: " · ")
+            let tomatoes = t.pomodoros > 0 ? "🍅×\(t.pomodoros)" : nil
+            return ["- \(t.title)", t.projectID.flatMap { names[$0] }, extra, tomatoes]
+                .compactMap { $0 }.joined(separator: " · ")
         }
         func items(_ status: TodoStatus) -> [Todo] {
             todos.filter { $0.status(now: now, calendar: calendar) == status }

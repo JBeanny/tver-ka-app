@@ -5,11 +5,13 @@ import TverKaCore
 struct TodayView: View {
     @Environment(TodoStore.self) private var store
     @Environment(SyncController.self) private var sync
+    @Environment(FocusController.self) private var focus
     var theme: Theme
     var showDone: () -> Void
     var edit: (Todo.ID) -> Void
     var manageProjects: () -> Void
     var setUpPhone: () -> Void
+    var focusSettings: () -> Void
 
     @State private var draft = ""
     @State var projectsOpen = false
@@ -24,7 +26,12 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 14) {
             header
             projectRow
-            if !isEmpty { greeting }
+            if focus.isActive {
+                FocusCard(theme: theme)
+                    .transition(.scale(scale: 0.95, anchor: .top).combined(with: .opacity))
+            } else if !isEmpty {
+                greeting
+            }
             quickAdd
             if isEmpty {
                 EmptyStateView(theme: theme, doneToday: store.doneTodayCount)
@@ -78,9 +85,25 @@ struct TodayView: View {
             Wordmark(theme: theme)
             Spacer()
             if store.streak > 0 {
+                // Focus mode adds a header button, so the streak shrinks to just the number.
                 StickerBadge(
-                    text: "\(store.streak) day streak", icon: "flame.fill", fill: Theme.lime,
-                    line: theme.line, tilt: -3, size: 13, capsule: true)
+                    text: focus.isEnabled ? "\(store.streak)" : "\(store.streak) day streak", icon: "flame.fill",
+                    fill: Theme.lime, line: theme.line, tilt: -3, size: 13, capsule: true)
+                    .accessibilityLabel("\(store.streak) day streak")
+            }
+            if focus.isEnabled {
+                Button {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { focus.start(task: nil) }
+                } label: {
+                    TomatoIcon(size: 22, line: Theme.ink)
+                        .frame(width: 40, height: 40)
+                        .sticker(theme.card, line: theme.line, shadow: theme.shadow, radius: 13, offset: 2)
+                }
+                .buttonStyle(PressableStyle())
+                .disabled(focus.isActive)
+                .opacity(focus.isActive ? 0.5 : 1)
+                .help("Start a free focus session")
+                .accessibilityLabel("Start a free focus session")
             }
             StickerIconButton(
                 systemImage: "checkmark.rectangle.stack", label: "Show done to-dos",
@@ -103,6 +126,9 @@ struct TodayView: View {
             Toggle("Sync with iCloud", isOn: Binding(get: { sync.isEnabled }, set: { sync.setEnabled($0) }))
                 .disabled(!sync.isAvailable)
             Button("Add from iPhone…", action: setUpPhone)
+            Divider()
+            Toggle("Focus mode (pomodoro)", isOn: Binding(get: { focus.isEnabled }, set: { focus.setEnabled($0) }))
+            Button("Focus settings…", action: focusSettings)
             Divider()
             Picker("Appearance", selection: $appearance) {
                 ForEach(Appearance.allCases) { Text($0.title).tag($0) }

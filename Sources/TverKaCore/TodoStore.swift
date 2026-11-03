@@ -6,6 +6,8 @@ import Observation
 public final class TodoStore {
     public private(set) var todos: [Todo] = []
     public private(set) var projects: [Project] = []
+    /// Finished focus sessions from the last 60 days.
+    public private(set) var focusLog: [FocusEntry] = []
     /// The selected project; also where new to-dos go while viewing all projects.
     public private(set) var activeProjectID: UUID
     /// When true the lists combine every project.
@@ -40,6 +42,7 @@ public final class TodoStore {
         knownModificationDate = nil
         projects = []
         todos = []
+        focusLog = []
         load()
         if knownModificationDate == nil { save() }
         rollOver()
@@ -242,6 +245,22 @@ public final class TodoStore {
         }
     }
 
+    /// A focus session finished: one more tomato for the to-do (if any) and for today.
+    public func recordPomodoro(todoID: Todo.ID?, minutes: Int) {
+        reloadIfChangedExternally()
+        if let todoID, let i = todos.firstIndex(where: { $0.id == todoID }) {
+            todos[i].pomodoros += 1
+        }
+        focusLog.append(FocusEntry(date: now, minutes: minutes, todoID: todoID))
+        let cutoff = calendar.date(byAdding: .day, value: -60, to: today)!
+        focusLog.removeAll { $0.date < cutoff }
+        save()
+    }
+
+    public var pomodorosToday: Int {
+        focusLog.filter { calendar.isDate($0.date, inSameDayAs: currentDay) }.count
+    }
+
     public func bringToToday(_ id: Todo.ID) {
         mutate(id) { $0.dueDate = today }
     }
@@ -283,6 +302,7 @@ public final class TodoStore {
                 todos = file.todos
                 if let id = file.activeProjectID { activeProjectID = id }
                 showingAll = file.showingAll ?? false
+                focusLog = file.focusLog ?? []
                 knownModificationDate = CoordinatedFile.modificationDate(fileURL)
             } else if let legacy = try? decoder.decode([Todo].self, from: data) {
                 todos = legacy
@@ -310,7 +330,8 @@ public final class TodoStore {
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let file = SaveFile(
-            projects: projects, activeProjectID: activeProjectID, showingAll: showingAll, todos: todos)
+            projects: projects, activeProjectID: activeProjectID, showingAll: showingAll, todos: todos,
+            focusLog: focusLog.isEmpty ? nil : focusLog)
         do {
             try CoordinatedFile.write(try encoder.encode(file), to: fileURL)
             knownModificationDate = CoordinatedFile.modificationDate(fileURL)

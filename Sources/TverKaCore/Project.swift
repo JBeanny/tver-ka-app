@@ -26,4 +26,5 @@ struct SaveFile: Codable {
     var activeProjectID: UUID?
     var showingAll: Bool?
     var todos: [Todo]
+    var focusLog: [FocusEntry]?
 }

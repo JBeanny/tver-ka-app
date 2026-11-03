@@ -15,6 +15,8 @@ public struct Todo: Codable, Identifiable, Equatable, Sendable {
     public var autoRoll: Bool
     /// How many days this to-do has been carried over.
     public var rollCount: Int
+    /// Focus sessions (tomatoes) finished on this to-do.
+    public var pomodoros: Int
 
     public init(
         id: UUID = UUID(),
@@ -26,7 +28,8 @@ public struct Todo: Codable, Identifiable, Equatable, Sendable {
         doneAt: Date? = nil,
         isPriority: Bool = false,
         autoRoll: Bool = true,
-        rollCount: Int = 0
+        rollCount: Int = 0,
+        pomodoros: Int = 0
     ) {
         self.id = id
         self.title = title
@@ -38,6 +41,27 @@ public struct Todo: Codable, Identifiable, Equatable, Sendable {
         self.isPriority = isPriority
         self.autoRoll = autoRoll
         self.rollCount = rollCount
+        self.pomodoros = pomodoros
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, projectID, createdAt, dueDate, isDone, doneAt, isPriority, autoRoll, rollCount, pomodoros
+    }
+
+    /// Decodes older files that predate `pomodoros`.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        projectID = try c.decodeIfPresent(UUID.self, forKey: .projectID)
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        dueDate = try c.decode(Date.self, forKey: .dueDate)
+        isDone = try c.decode(Bool.self, forKey: .isDone)
+        doneAt = try c.decodeIfPresent(Date.self, forKey: .doneAt)
+        isPriority = try c.decode(Bool.self, forKey: .isPriority)
+        autoRoll = try c.decode(Bool.self, forKey: .autoRoll)
+        rollCount = try c.decode(Int.self, forKey: .rollCount)
+        pomodoros = try c.decodeIfPresent(Int.self, forKey: .pomodoros) ?? 0
     }
 }
 

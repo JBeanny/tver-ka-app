@@ -3,6 +3,7 @@ import TverKaCore
 
 struct TodoRow: View {
     @Environment(TodoStore.self) private var store
+    @Environment(FocusController.self) private var focus
     var todo: Todo
     var theme: Theme
     var edit: () -> Void
@@ -12,6 +13,10 @@ struct TodoRow: View {
     private var fill: Color { todo.isPriority ? Theme.butter : theme.card }
     private var textColor: Color { todo.isPriority ? Theme.ink : theme.text }
     private var metaColor: Color { todo.isPriority ? Color(hex: 0x4A4033) : theme.sub }
+    private var isFocusing: Bool {
+        focus.isActive && focus.timer.phase == .focus && focus.timer.taskID == todo.id
+    }
+    private var showsTomatoes: Bool { focus.isEnabled && todo.pomodoros > 0 }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -23,7 +28,7 @@ struct TodoRow: View {
                     .strikethrough(checking, color: textColor)
                     .fixedSize(horizontal: false, vertical: true)
                 let showsRoll = todo.rollCount > 0 || (todo.isPriority && todo.autoRoll)
-                if showsRoll || store.showingAll {
+                if showsRoll || store.showingAll || showsTomatoes || isFocusing {
                     HStack(spacing: 6) {
                         if store.showingAll {
                             ProjectTag(project: store.project(for: todo), line: theme.line, textColor: metaColor)
@@ -31,7 +36,15 @@ struct TodoRow: View {
                         if todo.rollCount > 0 {
                             StickerBadge(text: "rolled ×\(todo.rollCount)", fill: Theme.blue, textColor: .white, tilt: 2)
                         }
-                        if showsRoll && !store.showingAll {
+                        if showsTomatoes {
+                            TomatoCount(count: todo.pomodoros, textColor: metaColor)
+                        }
+                        if isFocusing {
+                            Text("focusing…")
+                                .font(.rounded(11, .black))
+                                .foregroundStyle(todo.isPriority ? Theme.danger : Theme.tomato)
+                        }
+                        if showsRoll && !store.showingAll && !showsTomatoes && !isFocusing {
                             Label(todo.autoRoll ? "auto-roll on" : "auto-roll off", systemImage: "repeat")
                                 .font(.rounded(11, .heavy))
                                 .foregroundStyle(metaColor)
@@ -43,6 +56,19 @@ struct TodoRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture(perform: edit)
+            if focus.isEnabled && !isFocusing {
+                Button {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { focus.start(task: todo.id) }
+                } label: {
+                    TomatoIcon(size: 18, showsPlay: true)
+                        .frame(width: 30, height: 30)
+                        .sticker(todo.isPriority ? .white : theme.bg, line: todo.isPriority ? Theme.ink : theme.line,
+                                 radius: 9, lineWidth: 2)
+                }
+                .buttonStyle(PressableStyle())
+                .help("Focus on this to-do")
+                .accessibilityLabel("Focus on \(todo.title)")
+            }
             Button(action: edit) {
                 Image(systemName: "ellipsis")
                     .rotationEffect(.degrees(90))
@@ -58,6 +84,13 @@ struct TodoRow: View {
         .padding(.trailing, 4)
         .padding(.vertical, todo.isPriority ? 8 : 4)
         .sticker(fill, line: theme.line, shadow: theme.shadow)
+        .overlay {
+            if isFocusing {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Theme.tomato, style: StrokeStyle(lineWidth: 2.5, dash: [6, 4]))
+                    .padding(-5)
+            }
+        }
         .scaleEffect(checking ? 0.97 : 1)
         .opacity(checking ? 0.6 : 1)
         .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .move(edge: .trailing).combined(with: .opacity)))

@@ -13,12 +13,14 @@ struct RootView: View {
     @State private var editing: Todo.ID?
     @State private var managingProjects: Bool
     @State private var settingUpPhone: Bool
+    @State private var focusSettingsOpen: Bool
     private let projectsOpen: Bool
 
     init(
         screen: Screen = .today, editing: Todo.ID? = nil, managingProjects: Bool = false,
-        projectsOpen: Bool = false, settingUpPhone: Bool = false
+        projectsOpen: Bool = false, settingUpPhone: Bool = false, focusSettingsOpen: Bool = false
     ) {
+        _focusSettingsOpen = State(initialValue: focusSettingsOpen)
         _screen = State(initialValue: screen)
         _editing = State(initialValue: editing)
         _managingProjects = State(initialValue: managingProjects)
@@ -37,6 +39,7 @@ struct RootView: View {
                     edit: { id in withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { editing = id } },
                     manageProjects: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { managingProjects = true } },
                     setUpPhone: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { settingUpPhone = true } },
+                    focusSettings: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { focusSettingsOpen = true } },
                     projectsOpen: projectsOpen)
                 .transition(.move(edge: .leading).combined(with: .opacity))
             case .done:
@@ -76,6 +79,17 @@ struct RootView: View {
                     .frame(maxHeight: .infinity, alignment: .bottom)
                     .transition(.move(edge: .bottom))
             }
+
+            if focusSettingsOpen {
+                Color.black.opacity(0.35)
+                    .ignoresSafeArea()
+                    .onTapGesture { close() }
+                    .transition(.opacity)
+                FocusSettingsView(theme: theme, close: close)
+                    .padding(10)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                    .transition(.move(edge: .bottom))
+            }
         }
         .frame(width: 360, height: 640)
         .onAppear { store.rollOver() }
@@ -90,6 +104,7 @@ struct RootView: View {
             editing = nil
             managingProjects = false
             settingUpPhone = false
+            focusSettingsOpen = false
         }
     }
 }

@@ -40,6 +40,7 @@ You can't ignore it, but you can turn it off for any single task. Those tasks st
 - **The done pile.** Finished to-dos stay out of the way behind one small button, grouped by day, and each one can be undone.
 - **Streaks.** The streak counts the days in a row you've finished at least one to-do.
 - **Menu bar icon.** A full-color mascot that's easy to spot, with your open count. A yellow dot means priority to-dos are waiting.
+- **Focus mode (optional).** A built-in Pomodoro timer: start a focus session on any to-do, earn a 🍅 per session, and see the countdown right in the menu bar. It's off until you turn it on.
 - **Add from your iPhone.** Turn on iCloud sync and use the included Shortcut: "Hey Siri, add to tver-ka", the Action button, or a home screen icon. To-dos land on your Mac within seconds.
 - **Light, dark, or match system.**
 - **Native and private.** SwiftUI, no account, no server. Your data is a single JSON file, kept on your Mac or in your own iCloud Drive.
@@ -127,6 +128,21 @@ Name it **Add to tver-ka**.
 >
 > A full native iPhone app with live two-way sync (CloudKit) is possible later, but it needs a paid Apple Developer account.
 
+## Focus mode (Pomodoro)
+
+<p align="center">
+  <img src="docs/screenshots/focus-running-light.png" width="240" alt="A focus session running on a to-do">
+  <img src="docs/screenshots/focus-settings-light.png" width="240" alt="Focus mode settings">
+</p>
+
+An optional Pomodoro timer built into your to-dos. It's **off by default**: turn it on in **`…` › Focus mode (pomodoro)**.
+
+- **Focus on a to-do:** tap the 🍅▶ button on any row. Or tap the tomato in the header for a free session with no task.
+- **While it runs:** a focus card shows the countdown, the task, and pause / skip / stop controls, and the **menu bar shows the time left** (a cup means you're on a break, and the icon dims while paused).
+- **When a session ends:** you get a notification and a chime, the task earns a tomato (shown as 🍅×N on the row), and tver-ka asks whether that to-do is done. The break starts by itself.
+- **Classic timings:** 25 min focus, 5 min short break, and a 15 min long break every 4 sessions, all adjustable in **`…` › Focus settings…**, along with auto-start and sound.
+- **What's stored where:** tomatoes stay with a to-do when it rolls over, so carried-over tasks show the effort already spent. Your settings and the running timer are per Mac. Tomato counts live in your data file, so they sync with iCloud too.
+
 ## How rollover works
 
 | To-do state at midnight | Auto-roll **on** (default) | Auto-roll **off** |
@@ -164,6 +180,7 @@ Debug settings (set them as environment variables and run the binary directly):
 | `TVERKA_DAY_OFFSET=1` | Pretend it's tomorrow, to watch rollover happen |
 | `TVERKA_DATA_FILE=/tmp/test.json` | Use a scratch data file instead of your real one. This also turns off real iCloud and uses separate settings, so a test run never touches your synced data. |
 | `TVERKA_ICLOUD_ROOT=/tmp/fake-icloud` | Use a fake `~/Library/Mobile Documents` (create `com~apple~CloudDocs` inside it) so sync testing never touches real iCloud. It also uses separate settings. |
+| `TVERKA_FOCUS_SCALE=60` | Run Focus mode 60× faster (each minute takes a second) to watch a full cycle quickly |
 | `TVERKA_SNAPSHOT_DIR=/tmp/shots` | Render every screen (light and dark) plus the menu bar icon to PNGs, then quit |
 
 ```sh
@@ -194,9 +211,11 @@ Sources/
     SyncLocation.swift #   iCloud Drive paths and moving data in and out of iCloud
     InboxImporter.swift#   parses and imports to-dos dropped in by the iPhone Shortcut
     TodayDigest.swift  #   the Today.md summary for the phone
+    Pomodoro.swift     #   Focus mode settings and the Pomodoro timer state machine
   TverKa/              # the SwiftUI menu bar app
     TverKaApp.swift    #   MenuBarExtra, day-change / wake / sync watcher
     SyncController.swift # the iCloud sync setting and inbox polling
+    FocusController.swift # Focus mode: ticking, tomatoes, sound and notifications
     Views/             #   Today, done pile, task options, projects, theme, icons
 Tests/TverKaCoreTests/ # Swift Testing suites
 Scripts/

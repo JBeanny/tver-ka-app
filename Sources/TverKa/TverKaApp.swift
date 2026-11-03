@@ -6,21 +6,24 @@ import TverKaCore
 struct TverKaApp: App {
     @State private var store: TodoStore
     @State private var sync: SyncController
+    @State private var focus: FocusController
     @State private var watcher: DayWatcher
 
     init() {
         let paths = SyncPaths(localData: AppEnvironment.dataFile, iCloudRoot: AppEnvironment.iCloudRoot)
         let store = TodoStore(fileURL: SyncController.launchDataFile(paths), now: AppEnvironment.now)
         let sync = SyncController(store: store, paths: paths)
+        let focus = FocusController(store: store)
         _store = State(initialValue: store)
         _sync = State(initialValue: sync)
-        _watcher = State(initialValue: DayWatcher(store: store, sync: sync))
+        _focus = State(initialValue: focus)
+        _watcher = State(initialValue: DayWatcher(store: store, sync: sync, focus: focus))
         if AppEnvironment.snapshotDir == nil {
             DispatchQueue.main.async { sync.tick() }
         }
         DispatchQueue.main.async { Appearance.saved.apply() }
         if let dir = AppEnvironment.snapshotDir {
-            DispatchQueue.main.async { Snapshots.render(store: store, sync: sync, to: dir) }
+            DispatchQueue.main.async { Snapshots.render(store: store, sync: sync, focus: focus, to: dir) }
         }
     }
 
@@ -29,11 +32,17 @@ struct TverKaApp: App {
             RootView()
                 .environment(store)
                 .environment(sync)
+                .environment(focus)
         } label: {
             HStack(spacing: 3) {
-                Image(nsImage: MenuBarIcon.image(hot: store.anyOpenPriority))
-                if store.totalOpenCount > 0 {
-                    Text("\(store.totalOpenCount)")
+                if focus.isActive {
+                    Image(nsImage: MenuBarIcon.focusImage(onBreak: focus.timer.phase.isBreak, paused: focus.timer.isPaused))
+                    Text(focus.clock).monospacedDigit()
+                } else {
+                    Image(nsImage: MenuBarIcon.image(hot: store.anyOpenPriority))
+                    if store.totalOpenCount > 0 {
+                        Text("\(store.totalOpenCount)")
+                    }
                 }
             }
         }
@@ -47,6 +56,8 @@ struct TverKaApp: App {
 enum AppEnvironment {
     private static let env = ProcessInfo.processInfo.environment
     static let dayOffset = Double(env["TVERKA_DAY_OFFSET"] ?? "") ?? 0
+    /// `TVERKA_FOCUS_SCALE=60` runs Focus mode 60× faster (a minute per second) for testing.
+    static let focusSecondsPerMinute = 60 / max(1, Double(env["TVERKA_FOCUS_SCALE"] ?? "") ?? 1)
     static let snapshotDir = env["TVERKA_SNAPSHOT_DIR"].map { URL(fileURLWithPath: $0) }
     static let dataFile = env["TVERKA_DATA_FILE"].map { URL(fileURLWithPath: $0) } ?? TodoStore.defaultFileURL
     /// Any debug data override isolates the run from the real iCloud Drive and the real settings,
@@ -73,11 +84,12 @@ final class DayWatcher {
     private var tokens: [NSObjectProtocol] = []
     private var timer: Timer?
 
-    init(store: TodoStore, sync: SyncController) {
+    init(store: TodoStore, sync: SyncController, focus: FocusController) {
         let roll: @Sendable (Notification) -> Void = { _ in
             Task { @MainActor in
                 sync.tick()
                 store.rollOver()
+                focus.tick()
             }
         }
         tokens.append(NotificationCenter.default.addObserver(

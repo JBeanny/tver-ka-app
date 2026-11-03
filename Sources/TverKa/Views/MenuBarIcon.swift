@@ -70,3 +70,60 @@ enum MenuBarIcon {
         return image
     }
 }
+
+extension MenuBarIcon {
+    @MainActor private static var focusCache: [String: NSImage] = [:]
+
+    /// While Focus mode runs: the mascot with a little tomato (focus), or a lime cup (break).
+    /// Paused states are drawn at half strength so they're easy to notice.
+    @MainActor static func focusImage(onBreak: Bool, paused: Bool) -> NSImage {
+        let key = "\(onBreak)-\(paused)"
+        if let cached = focusCache[key] { return cached }
+        let base = image(hot: false)
+        let size = NSSize(width: 21, height: 18)
+        let tomatoRed = NSColor(red: 1, green: 0x5A / 255, blue: 0x4E / 255, alpha: 1)
+        let leaf = NSColor(red: 0x7B / 255, green: 0xD1 / 255, blue: 0x3B / 255, alpha: 1)
+        let lime = NSColor(red: 0xC6 / 255, green: 0xF4 / 255, blue: 0x32 / 255, alpha: 1)
+        let result = NSImage(size: size, flipped: true) { _ in
+            let alpha: CGFloat = paused ? 0.45 : 1
+            // Alpha set before the layer applies to everything drawn inside it, as one image.
+            NSGraphicsContext.current?.cgContext.setAlpha(alpha)
+            NSGraphicsContext.current?.cgContext.beginTransparencyLayer(auxiliaryInfo: nil)
+            defer { NSGraphicsContext.current?.cgContext.endTransparencyLayer() }
+            if onBreak {
+                let cup = NSBezierPath(roundedRect: NSRect(x: 3, y: 6, width: 12, height: 10), xRadius: 3.5, yRadius: 3.5)
+                lime.setFill()
+                cup.fill()
+                NSColor.labelColor.setStroke()
+                cup.lineWidth = 1.6
+                cup.stroke()
+                let handle = NSBezierPath(ovalIn: NSRect(x: 13.5, y: 8.5, width: 5, height: 5))
+                handle.lineWidth = 1.6
+                handle.stroke()
+                for x: CGFloat in [7, 11] {
+                    let steam = NSBezierPath()
+                    steam.move(to: NSPoint(x: x, y: 1.5))
+                    steam.curve(to: NSPoint(x: x, y: 4.5), controlPoint1: NSPoint(x: x + 1.2, y: 2.5), controlPoint2: NSPoint(x: x - 1.2, y: 3.5))
+                    steam.lineWidth = 1.2
+                    steam.lineCapStyle = .round
+                    steam.stroke()
+                }
+            } else {
+                base.draw(in: NSRect(origin: .zero, size: size))
+                let tomato = NSBezierPath(ovalIn: NSRect(x: 13, y: 0.8, width: 7.5, height: 7.5))
+                tomatoRed.setFill()
+                tomato.fill()
+                NSColor.labelColor.setStroke()
+                tomato.lineWidth = 1.1
+                tomato.stroke()
+                leaf.setFill()
+                NSBezierPath(ovalIn: NSRect(x: 15, y: 0, width: 3.5, height: 2)).fill()
+            }
+            return true
+        }
+        result.isTemplate = false
+        result.accessibilityDescription = onBreak ? "tver-ka, on a break" : "tver-ka, focusing"
+        focusCache[key] = result
+        return result
+    }
+}

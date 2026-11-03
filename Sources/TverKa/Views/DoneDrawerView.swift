@@ -97,6 +97,7 @@ struct DoneDrawerView: View {
 
 private struct DoneRow: View {
     @Environment(TodoStore.self) private var store
+    @Environment(FocusController.self) private var focus
     var todo: Todo
     var theme: Theme
 
@@ -118,6 +119,9 @@ private struct DoneRow: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            if focus.isEnabled && todo.pomodoros > 0 {
+                TomatoCount(count: todo.pomodoros, textColor: theme.sub)
+            }
             if todo.rollCount > 0 {
                 StickerBadge(text: "beat it after ×\(todo.rollCount)", fill: Theme.butter, tilt: -3, size: 10)
             }
