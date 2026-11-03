@@ -232,11 +232,17 @@ struct FocusSettingsView: View {
             .sticker(Theme.tomato, line: theme.line)
 
             Group {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible())], spacing: 8) {
-                    stepper("FOCUS", value: \.focusMinutes, unit: "min", range: PomodoroSettings.focusRange, step: 5)
-                    stepper("SHORT BREAK", value: \.shortBreakMinutes, unit: "min", range: PomodoroSettings.shortBreakRange, step: 1)
-                    stepper("LONG BREAK", value: \.longBreakMinutes, unit: "min", range: PomodoroSettings.longBreakRange, step: 5)
-                    stepper("LONG BREAK EVERY", value: \.longBreakEvery, unit: "rounds", range: PomodoroSettings.longBreakEveryRange, step: 1)
+                // Plain stacks, not a lazy grid: lazy cells are created after the sheet appears
+                // and so skip its slide-in transition.
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        stepper("FOCUS", value: \.focusMinutes, unit: "min", range: PomodoroSettings.focusRange, step: 5)
+                        stepper("SHORT BREAK", value: \.shortBreakMinutes, unit: "min", range: PomodoroSettings.shortBreakRange, step: 1)
+                    }
+                    HStack(spacing: 8) {
+                        stepper("LONG BREAK", value: \.longBreakMinutes, unit: "min", range: PomodoroSettings.longBreakRange, step: 5)
+                        stepper("LONG BREAK EVERY", value: \.longBreakEvery, unit: "rounds", range: PomodoroSettings.longBreakEveryRange, step: 1)
+                    }
                 }
 
                 VStack(spacing: 0) {
@@ -292,6 +298,7 @@ struct FocusSettingsView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
+        .frame(maxWidth: .infinity)
         .sticker(theme.bg, line: theme.line, radius: 14, lineWidth: 2)
     }
 
